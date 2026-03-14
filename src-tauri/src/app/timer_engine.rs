@@ -68,16 +68,40 @@ fn trigger_break(app: &AppHandle, mode: ReminderMode) {
     // Show break overlay in main window (no separate window)
     match mode {
         ReminderMode::WindowAndNotification | ReminderMode::WindowOnly => {
-            // Show and focus the main window
-            if let Some(win) = app.get_webview_window("main") {
-                let _ = win.show();
-                let _ = win.set_focus();
-            }
+            show_and_focus_window(app);
             let _ = app.emit("break-due", ());
         }
         _ => {
             let _ = app.emit("break-due", ());
         }
+    }
+}
+
+/// Show and forcefully bring the main window to the foreground,
+/// even when the window was closed/hidden and the app is in background.
+fn show_and_focus_window(app: &AppHandle) {
+    if let Some(win) = app.get_webview_window("main") {
+        let _ = win.unminimize();
+        let _ = win.show();
+        let _ = win.set_focus();
+    }
+
+    // On macOS, we must also activate the application itself so it comes
+    // to the foreground above other apps.
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        // Use osascript to bring our app to the front — reliable across all macOS versions
+        let pid = std::process::id();
+        let _ = Command::new("osascript")
+            .args([
+                "-e",
+                &format!(
+                    "tell application \"System Events\" to set frontmost of (first process whose unix id is {}) to true",
+                    pid
+                ),
+            ])
+            .output();
     }
 }
 
