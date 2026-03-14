@@ -230,6 +230,9 @@ fn main() {
             commands::get_stats,
             commands::set_auto_start,
             commands::toggle_sound,
+            commands::quit_app,
+            commands::reset_stats,
+            commands::play_complete_sound,
             commands::open_url,
             commands::get_theme,
         ])

@@ -143,6 +143,12 @@ impl StatsStore {
             .unwrap_or((0, 0))
     }
 
+    pub fn reset_all(&self) -> Result<(), String> {
+        self.conn.execute("DELETE FROM stats", []).map_err(|e| e.to_string())?;
+        self.conn.execute("UPDATE daily_streak SET current_streak = 0, longest_streak = 0, last_break_date = ''", []).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
     pub fn get_total_breaks(&self) -> i64 {
         self.conn
             .query_row("SELECT COALESCE(SUM(breaks_completed), 0) FROM stats", [], |row| {

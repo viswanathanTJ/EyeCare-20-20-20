@@ -138,6 +138,39 @@ pub async fn set_auto_start(state: State<'_, SharedAppState>, enabled: bool) -> 
 }
 
 #[tauri::command]
+pub async fn quit_app(app: tauri::AppHandle) -> Result<(), String> {
+    app.exit(0);
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn reset_stats(state: State<'_, SharedAppState>) -> Result<(), String> {
+    let store = StatsStore::open()?;
+    store.reset_all()?;
+    // Refresh in-memory state
+    let mut s = state.lock().await;
+    s.today_completed = 0;
+    s.today_skipped = 0;
+    s.current_streak = 0;
+    s.longest_streak = 0;
+    s.total_breaks = 0;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn play_complete_sound() -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        std::thread::spawn(|| {
+            let _ = std::process::Command::new("afplay")
+                .arg("/System/Library/Sounds/Hero.aiff")
+                .output();
+        });
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn open_url(url: String) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     {

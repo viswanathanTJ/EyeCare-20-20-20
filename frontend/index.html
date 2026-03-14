@@ -225,18 +225,83 @@ body {
 .overlay.show { display: flex; }
 .break-title { font-size: 22px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; color: var(--pink); margin-bottom: 32px; }
 .break-tip { font-size: 16px; color: var(--subtle); font-style: italic; margin-bottom: 36px; padding: 0 24px; }
-.complete { font-size: 22px; color: var(--accent); font-weight: 300; }
+
+/* Celebration */
+.celebrate { text-align: center; animation: celebrateIn 0.6s ease-out; position: relative; z-index: 2; }
+.celebrate-icon {
+  font-size: 64px; color: var(--accent); margin-bottom: 16px;
+  animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.celebrate-title { font-size: 28px; font-weight: 200; color: var(--accent); letter-spacing: 2px; margin-bottom: 8px; }
+.celebrate-sub { font-size: 16px; color: var(--subtle); font-weight: 300; margin-bottom: 24px; }
+.celebrate-stats { display: flex; align-items: baseline; justify-content: center; gap: 8px; margin-bottom: 24px; }
+.celebrate-stat { font-size: 42px; font-weight: 200; color: var(--accent); }
+.celebrate-label { font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+.btn-hurray {
+  padding: 12px 36px; border-radius: 8px; font-size: 15px; cursor: pointer;
+  font-family: inherit; letter-spacing: 1px; transition: all 0.2s;
+  background: rgba(100,255,218,0.15); border: 1px solid var(--accent); color: var(--accent);
+  margin-bottom: 20px;
+}
+.btn-hurray:hover { background: rgba(100,255,218,0.25); }
+
+/* Progress bar for auto-close */
+.progress-bar-wrap {
+  width: 200px; height: 4px; border-radius: 2px; background: var(--ring-bg);
+  margin: 0 auto; overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%; background: var(--accent); border-radius: 2px;
+  width: 100%; transition: width linear;
+}
+
+/* Confetti */
+.confetti-container { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.confetti-piece {
+  position: absolute; top: -20px; width: 10px; height: 6px; border-radius: 2px;
+  animation: confettiDrift linear forwards;
+}
+@keyframes confettiDrift {
+  0%   { transform: translateY(0) rotate(0deg) scaleX(1); opacity: 1; }
+  25%  { transform: translateY(25vh) rotate(180deg) scaleX(0.5); opacity: 1; }
+  50%  { transform: translateY(50vh) rotate(360deg) scaleX(1); opacity: 0.9; }
+  75%  { transform: translateY(75vh) rotate(540deg) scaleX(0.3); opacity: 0.7; }
+  100% { transform: translateY(110vh) rotate(720deg) scaleX(0.8); opacity: 0; }
+}
+/* Dots variant */
+.confetti-dot {
+  position: absolute; top: -10px; width: 6px; height: 6px; border-radius: 50%;
+  animation: confettiDrift linear forwards;
+}
+
+@keyframes celebrateIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes popIn {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
 </style>
 </head>
 <body>
 
 <!-- HEADER -->
 <div class="header">
+  <div style="display:flex;gap:8px;">
+  <button class="settings-icon" id="quitBtn" title="Quit">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  </button>
   <button class="settings-icon" id="statsBtn" title="Stats">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
     </svg>
   </button>
+  </div>
   <div style="display:flex;gap:8px;">
   <button class="settings-icon active" id="soundBtn" title="Sound On">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -449,6 +514,14 @@ body {
         <div class="stats-card-label">All-Time Breaks Completed</div>
       </div>
     </div>
+    <div style="text-align:center;margin-bottom:16px;">
+      <button class="btn btn-sec" id="resetStatsBtn" style="font-size:12px;padding:8px 18px;color:var(--pink);border-color:var(--pink);">Reset Statistics</button>
+      <div id="resetConfirm" style="display:none;margin-top:10px;">
+        <div style="font-size:12px;color:var(--pink);margin-bottom:8px;">Are you sure? This cannot be undone.</div>
+        <button class="btn btn-pink" id="resetYes" style="font-size:12px;padding:6px 16px;margin-right:8px;">Yes, Reset</button>
+        <button class="btn btn-sec" id="resetNo" style="font-size:12px;padding:6px 16px;">Cancel</button>
+      </div>
+    </div>
     <div style="font-size:12px;color:var(--muted);text-align:center;line-height:1.6;">
       Complete at least one break per day to keep your streak going.
     </div>
@@ -473,7 +546,22 @@ body {
     <button class="btn btn-pink" id="startBreakBtn">Start Break</button>
     <button class="btn btn-sec" id="skipBtn">Skip</button>
   </div>
-  <div class="complete" id="completeMsg" style="display:none">Eyes refreshed!</div>
+  <div id="completeMsg" style="display:none">
+    <div class="confetti-container" id="confettiBox"></div>
+    <div class="celebrate">
+      <div class="celebrate-icon">&#10004;</div>
+      <div class="celebrate-title">Break Complete!</div>
+      <div class="celebrate-sub">Your eyes thank you</div>
+      <div class="celebrate-stats">
+        <span class="celebrate-stat" id="celebrateCount">0</span>
+        <span class="celebrate-label">breaks today</span>
+      </div>
+      <button class="btn-hurray" id="hurrayBtn">Hurray!</button>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="celebrateProgress"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -588,6 +676,9 @@ body {
     document.getElementById("startBreakBtn").style.display = "";
     document.getElementById("completeMsg").style.display = "none";
     document.getElementById("breakTitle").textContent = "Time for an Eye Break";
+    document.getElementById("breakTitle").style.display = "";
+    document.getElementById("breakTip").style.display = "";
+    document.querySelector("#breakOverlay .ring-wrap").style.display = "";
   }
 
   function updBreak() {
@@ -595,7 +686,68 @@ body {
     document.getElementById("breakProgress").style.strokeDashoffset = C * (1 - breakRem / breakDur);
   }
 
-  function hideBreak() { document.getElementById("breakOverlay").className = "overlay"; }
+  function hideBreak() {
+    document.getElementById("breakOverlay").className = "overlay";
+    if (celebrateTimer) { clearInterval(celebrateTimer); celebrateTimer = null; }
+    document.getElementById("confettiBox").innerHTML = "";
+  }
+
+  var celebrateTimer = null;
+
+  var confettiColors = ["#e74c3c", "#3498db", "#f1c40f", "#2ecc71", "#e67e22", "#9b59b6", "#1abc9c", "#ff6b9d"];
+
+  function spawnConfetti() {
+    var box = document.getElementById("confettiBox");
+    for (var i = 0; i < 8; i++) {
+      var isDot = Math.random() > 0.6;
+      var el = document.createElement("div");
+      el.className = isDot ? "confetti-dot" : "confetti-piece";
+      el.style.left = Math.random() * 100 + "%";
+      el.style.background = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+      el.style.animationDuration = (2.5 + Math.random() * 2) + "s";
+      el.style.animationDelay = (Math.random() * 0.5) + "s";
+      if (!isDot) {
+        el.style.width = (6 + Math.random() * 10) + "px";
+        el.style.height = (4 + Math.random() * 4) + "px";
+        el.style.borderRadius = Math.random() > 0.5 ? "2px" : "50%";
+      }
+      box.appendChild(el);
+      (function(e) { setTimeout(function() { e.remove(); }, 5000); })(el);
+    }
+  }
+
+  // Initial burst — spawn many at once
+  function burstConfetti() {
+    for (var i = 0; i < 6; i++) {
+      setTimeout(spawnConfetti, i * 100);
+    }
+  }
+
+  function showCelebration() {
+    // Initial big burst then continuous
+    burstConfetti();
+    var confettiInterval = setInterval(spawnConfetti, 400);
+
+    // Progress bar countdown (5 seconds)
+    var prog = document.getElementById("celebrateProgress");
+    prog.style.transition = "none";
+    prog.style.width = "100%";
+    setTimeout(function() {
+      prog.style.transition = "width 5s linear";
+      prog.style.width = "0%";
+    }, 50);
+
+    celebrateTimer = setTimeout(function() {
+      clearInterval(confettiInterval);
+      hideBreak();
+    }, 5000);
+
+    // Hurray button — dismiss early
+    document.getElementById("hurrayBtn").onclick = function() {
+      clearInterval(confettiInterval);
+      hideBreak();
+    };
+  }
 
   function toggleSettings() {
     var panel = document.getElementById("settingsPanel");
@@ -640,6 +792,26 @@ body {
       document.getElementById("statsBtn").classList.remove("active");
     };
 
+    // Quit button
+    document.getElementById("quitBtn").onclick = function() {
+      T.core.invoke("quit_app");
+    };
+
+    // Reset stats with inline confirmation
+    document.getElementById("resetStatsBtn").onclick = function() {
+      document.getElementById("resetConfirm").style.display = "block";
+      this.style.display = "none";
+    };
+    document.getElementById("resetYes").onclick = function() {
+      T.core.invoke("reset_stats");
+      document.getElementById("resetConfirm").style.display = "none";
+      document.getElementById("resetStatsBtn").style.display = "";
+    };
+    document.getElementById("resetNo").onclick = function() {
+      document.getElementById("resetConfirm").style.display = "none";
+      document.getElementById("resetStatsBtn").style.display = "";
+    };
+
     // Dashboard buttons
     document.getElementById("takeBreakBtn").onclick = function() {
       T.core.invoke("take_break_now").then(function() { return T.core.invoke("get_tip"); })
@@ -659,10 +831,18 @@ body {
         if (breakRem <= 0) {
           clearInterval(bTimer);
           T.core.invoke("finish_break");
+          // Play completion sound
+          T.core.invoke("play_complete_sound");
+          // Show celebration
           document.getElementById("breakControls").style.display = "none";
+          document.getElementById("breakTitle").style.display = "none";
+          document.getElementById("breakTip").style.display = "none";
+          document.querySelector("#breakOverlay .ring-wrap").style.display = "none";
           document.getElementById("completeMsg").style.display = "block";
-          document.getElementById("breakTitle").textContent = "Break Complete";
-          setTimeout(hideBreak, 2000);
+          T.core.invoke("get_state").then(function(s) {
+            document.getElementById("celebrateCount").textContent = s.today_completed || 0;
+          });
+          showCelebration();
         }
       }, 1000);
     };
@@ -738,6 +918,38 @@ body {
     T.core.invoke("get_state").then(function(s) {
       curInt = Math.round(s.break_interval_secs / 60);
       curBrk = s.break_duration_secs;
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener("keydown", function(e) {
+      // Escape — close settings or stats panel
+      if (e.key === "Escape") {
+        var settings = document.getElementById("settingsPanel");
+        var stats = document.getElementById("statsPanel");
+        if (settings.classList.contains("show")) {
+          settings.classList.remove("show");
+          document.getElementById("settingsBtn").classList.remove("active");
+        } else if (stats.classList.contains("show")) {
+          stats.classList.remove("show");
+          document.getElementById("statsBtn").classList.remove("active");
+        }
+      }
+      // Enter or Space — start break or dismiss celebration
+      if (e.key === "Enter" || e.key === " ") {
+        var overlay = document.getElementById("breakOverlay");
+        if (!overlay.classList.contains("show")) return;
+        e.preventDefault();
+        var hurray = document.getElementById("hurrayBtn");
+        var completeVisible = document.getElementById("completeMsg").style.display !== "none";
+        if (completeVisible) {
+          hurray.click();
+        } else {
+          var startBtn = document.getElementById("startBreakBtn");
+          if (startBtn.style.display !== "none") {
+            startBtn.click();
+          }
+        }
+      }
     });
 
     pollState();
