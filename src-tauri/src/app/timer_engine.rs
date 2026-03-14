@@ -130,31 +130,3 @@ fn update_tray_title(app: &AppHandle, title: &str) {
     }
 }
 
-/// Sends a persistent-style status notification every 5 minutes
-/// showing the remaining time. Clicking it opens the app.
-pub async fn run_status_notifications(app: AppHandle, state: SharedAppState) {
-    loop {
-        tokio::time::sleep(Duration::from_secs(300)).await; // every 5 min
-
-        let s = state.lock().await;
-        if s.status != MonitoringStatus::Active {
-            continue;
-        }
-        let remaining = s.seconds_remaining;
-        drop(s);
-
-        let mins = remaining / 60;
-        let body = if mins > 0 {
-            format!("Next eye break in {} min. Click to open Eye2020.", mins)
-        } else {
-            "Eye break coming up soon!".to_string()
-        };
-
-        let _ = app
-            .notification()
-            .builder()
-            .title("👁 Eye2020 — Monitoring")
-            .body(&body)
-            .show();
-    }
-}

@@ -273,13 +273,6 @@ fn main() {
                 app::timer_engine::run_timer(timer_handle, timer_state).await;
             });
 
-            // Start periodic status notification (every 5 minutes)
-            let notif_handle = handle.clone();
-            let notif_state = state_clone.clone();
-            tauri::async_runtime::spawn(async move {
-                app::timer_engine::run_status_notifications(notif_handle, notif_state).await;
-            });
-
             // Start IPC listener for single-instance
             start_ipc_listener(handle.clone());
 
