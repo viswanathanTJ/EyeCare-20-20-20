@@ -44,8 +44,8 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
-  min-height: 100vh;
-  overflow-y: auto;
+  height: 100vh;
+  overflow: hidden;
   user-select: none;
 }
 
@@ -68,8 +68,9 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  height: 100vh;
   padding: 30px;
+  overflow-y: auto;
   text-align: center;
 }
 .app-title { font-size: 30px; font-weight: 200; letter-spacing: 5px; color: var(--accent); margin-bottom: 4px; }
@@ -398,6 +399,24 @@ body {
           <button class="theme-btn" data-theme="light" id="themeLight">Light</button>
         </div>
       </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-name">Accent Color</div>
+          <div class="setting-desc">Main highlight color</div>
+        </div>
+        <input type="color" id="accentPicker" value="#64ffda" style="width:36px;height:28px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;padding:0;">
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-name">Break Color</div>
+          <div class="setting-desc">Break timer accent</div>
+        </div>
+        <input type="color" id="pinkPicker" value="#ff6b9d" style="width:36px;height:28px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;padding:0;">
+      </div>
+      <div class="setting-row">
+        <div></div>
+        <button class="btn btn-sec" id="resetColorsBtn" style="font-size:11px;padding:5px 14px;">Reset Colors</button>
+      </div>
     </div>
 
     <!-- Timer config -->
@@ -576,6 +595,25 @@ body {
   var breakDur = 20, breakRem = 20, bTimer = null, paused = false, total = 1200;
   var curInt = 20, curBrk = 20;
   var themeChoice = "system";
+  var defaultAccent = "#64ffda", defaultPink = "#ff6b9d";
+  var customAccent = localStorage.getItem("accent") || "";
+  var customPink = localStorage.getItem("pink") || "";
+
+  function applyCustomColors() {
+    var r = document.documentElement.style;
+    if (customAccent) {
+      r.setProperty("--accent", customAccent);
+      document.getElementById("accentPicker").value = customAccent;
+    }
+    if (customPink) {
+      r.setProperty("--pink", customPink);
+      document.getElementById("pinkPicker").value = customPink;
+    }
+  }
+  // Apply on load
+  if (customAccent || customPink) {
+    document.addEventListener("DOMContentLoaded", applyCustomColors);
+  }
 
   function pad(n) { return String(n).padStart(2, "0"); }
 
@@ -670,6 +708,7 @@ body {
 
       // Theme
       applyTheme(themeChoice, s.theme);
+      applyCustomColors();
     });
   }
 
@@ -916,9 +955,34 @@ body {
         themeChoice = b.dataset.theme;
         T.core.invoke("get_state").then(function(s) {
           applyTheme(themeChoice, s.theme);
+          applyCustomColors();
         });
       };
     });
+
+    // Custom color pickers
+    document.getElementById("accentPicker").oninput = function() {
+      customAccent = this.value;
+      document.documentElement.style.setProperty("--accent", customAccent);
+      localStorage.setItem("accent", customAccent);
+    };
+    document.getElementById("pinkPicker").oninput = function() {
+      customPink = this.value;
+      document.documentElement.style.setProperty("--pink", customPink);
+      localStorage.setItem("pink", customPink);
+    };
+    document.getElementById("resetColorsBtn").onclick = function() {
+      customAccent = ""; customPink = "";
+      localStorage.removeItem("accent");
+      localStorage.removeItem("pink");
+      document.documentElement.style.removeProperty("--accent");
+      document.documentElement.style.removeProperty("--pink");
+      document.getElementById("accentPicker").value = defaultAccent;
+      document.getElementById("pinkPicker").value = defaultPink;
+    };
+
+    // Apply saved custom colors
+    applyCustomColors();
 
     // Initial sync
     T.core.invoke("get_state").then(function(s) {
