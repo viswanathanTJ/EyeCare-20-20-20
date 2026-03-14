@@ -259,7 +259,7 @@ pub async fn load_persisted_settings(state: &SharedAppState) {
 
 fn launch_agent_path() -> std::path::PathBuf {
     let mut path = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("/tmp"));
-    path.push("Library/LaunchAgents/com.eye2020.app.plist");
+    path.push("Library/LaunchAgents/com.eye2020.desktop.plist");
     path
 }
 
@@ -271,7 +271,7 @@ fn create_launch_agent() -> Result<(), String> {
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.eye2020.app</string>
+    <string>com.eye2020.desktop</string>
     <key>ProgramArguments</key>
     <array>
         <string>{}</string>
