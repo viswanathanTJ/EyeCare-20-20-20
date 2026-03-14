@@ -227,7 +227,7 @@ EyeCare/
 │       ├── system/
 │       │   └── screen_monitor.rs — macOS screen sleep/wake detection (WIP)
 │       └── data/
-│           └── stats_store.rs    — Statistics storage (WIP)
+│           └── stats_store.rs    — Statistics & settings persistence (SQLite)
 ├── README.md
 └── PLAN.md
 ```
@@ -263,11 +263,12 @@ EyeCare/
 - [x] Dock icon reopen support
 - [x] Launchpad / Spotlight / .app bundle
 - [x] Custom app icon
+- [x] Statistics tracking (breaks completed, streaks) — SQLite
+- [x] Settings persistence (SQLite)
+- [x] Auto-start on login
+- [x] Dark mode theme detection
+- [x] Settings & Statistics panels with icon buttons
 - [ ] Screen sleep/wake detection
-- [ ] Statistics tracking (breaks completed, streaks)
-- [ ] Settings persistence (SQLite)
-- [ ] Auto-start on login
-- [ ] Dark mode theme detection
 
 ## License
 

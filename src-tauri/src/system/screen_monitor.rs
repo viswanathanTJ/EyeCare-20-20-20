@@ -1,9 +1,8 @@
 use crate::app::app_state::{MonitoringStatus, SharedAppState};
-use std::process::Command;
 use std::time::Duration;
 use tauri::AppHandle;
 
-/// Monitors macOS screen sleep/wake state by polling IOKit.
+/// Monitors screen sleep/wake state by polling platform-specific APIs.
 /// On screen sleep → pauses timer automatically.
 /// On screen wake → resumes timer automatically.
 pub fn setup_screen_monitoring(_app: &AppHandle, state: SharedAppState) {
@@ -23,7 +22,6 @@ pub fn setup_screen_monitoring(_app: &AppHandle, state: SharedAppState) {
                     let mut s = st.lock().await;
                     if s.status == MonitoringStatus::Active {
                         s.status = MonitoringStatus::Paused;
-                        // We'll track that we auto-paused so we auto-resume
                     }
                 });
                 auto_paused = true;
@@ -44,8 +42,12 @@ pub fn setup_screen_monitoring(_app: &AppHandle, state: SharedAppState) {
     });
 }
 
-/// Check if the display is asleep using IOKit via ioreg.
+/// Platform-specific screen sleep detection.
+
+#[cfg(target_os = "macos")]
 fn is_screen_asleep() -> bool {
+    use std::process::Command;
+
     let output = Command::new("ioreg")
         .args(["-rc", "AppleBacklightDisplay"])
         .output();
@@ -53,20 +55,19 @@ fn is_screen_asleep() -> bool {
     match output {
         Ok(out) => {
             let stdout = String::from_utf8_lossy(&out.stdout);
-            // If no display info returned, screen is likely asleep
             if stdout.trim().is_empty() {
-                return false; // can't determine, assume awake
+                return false;
             }
-            // Check for brightness = 0 or powered off indicators
-            // A simpler check: use pmset
             is_display_off_pmset()
         }
         Err(_) => false,
     }
 }
 
-/// Use `pmset -g powerstate` to check display power state.
+#[cfg(target_os = "macos")]
 fn is_display_off_pmset() -> bool {
+    use std::process::Command;
+
     let output = Command::new("pmset")
         .args(["-g", "powerstate", "IODisplayWrangler"])
         .output();
@@ -74,10 +75,8 @@ fn is_display_off_pmset() -> bool {
     match output {
         Ok(out) => {
             let stdout = String::from_utf8_lossy(&out.stdout);
-            // Power state 1 = off/sleep, 4 = on
             for line in stdout.lines() {
                 if line.contains("IODisplayWrangler") {
-                    // The last column is the current power state
                     if let Some(state) = line.split_whitespace().last() {
                         if let Ok(n) = state.parse::<u32>() {
                             return n < 4;
@@ -86,6 +85,32 @@ fn is_display_off_pmset() -> bool {
                 }
             }
             false
+        }
+        Err(_) => false,
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn is_screen_asleep() -> bool {
+    // Windows doesn't expose a simple CLI for display power state.
+    // Always report awake — screen monitoring is best-effort.
+    false
+}
+
+#[cfg(target_os = "linux")]
+fn is_screen_asleep() -> bool {
+    use std::process::Command;
+
+    // Try xset for X11
+    let output = Command::new("xset")
+        .args(["-q"])
+        .output();
+
+    match output {
+        Ok(out) => {
+            let stdout = String::from_utf8_lossy(&out.stdout);
+            // Look for "Monitor is Off"
+            stdout.contains("Monitor is Off")
         }
         Err(_) => false,
     }

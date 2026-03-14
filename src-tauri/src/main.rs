@@ -9,42 +9,48 @@ mod ui;
 use app::app_state;
 use std::fs;
 use std::io::{Read, Write};
-use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
 use std::process;
 use tauri::Manager;
 
+fn lock_file_path() -> PathBuf {
+    let mut path = dirs::home_dir().unwrap_or_else(|| PathBuf::from(default_tmp()));
+    path.push(".eye2020.lock");
+    path
+}
+
+fn default_tmp() -> &'static str {
+    #[cfg(unix)]
+    { "/tmp" }
+    #[cfg(windows)]
+    { "C:\\Temp" }
+}
+
+// ── Unix single-instance IPC via Unix socket ──
+
+#[cfg(unix)]
 fn socket_path() -> PathBuf {
     let mut path = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/tmp"));
     path.push(".eye2020.sock");
     path
 }
 
-fn lock_file_path() -> PathBuf {
-    let mut path = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/tmp"));
-    path.push(".eye2020.lock");
-    path
-}
-
-/// Try to connect to an existing instance via Unix socket.
-/// If successful, send "show" command and exit.
-/// If not, we are the first instance — start normally.
+#[cfg(unix)]
 fn check_single_instance() {
+    use std::os::unix::net::UnixStream;
+
     let sock = socket_path();
     let lock_path = lock_file_path();
 
-    // Try connecting to existing instance
     if sock.exists() {
         if let Ok(mut stream) = UnixStream::connect(&sock) {
             let _ = stream.write_all(b"show");
             eprintln!("Eye2020 is already running — bringing window to front.");
             process::exit(0);
         }
-        // Socket exists but no one is listening — stale, clean up
         let _ = fs::remove_file(&sock);
     }
 
-    // Also clean up stale lock file
     if lock_path.exists() {
         if let Ok(mut file) = fs::File::open(&lock_path) {
             let mut pid_str = String::new();
@@ -55,7 +61,6 @@ fn check_single_instance() {
                         .output();
                     if let Ok(output) = status {
                         if output.status.success() {
-                            // Process alive but socket gone — try sending SIGUSR1 as fallback
                             eprintln!("Eye2020 is already running (PID {}). Attempting to show window...", pid);
                             let _ = process::Command::new("kill")
                                 .args(["-USR1", &pid.to_string()])
@@ -69,17 +74,17 @@ fn check_single_instance() {
         let _ = fs::remove_file(&lock_path);
     }
 
-    // Write lock file with our PID
     if let Ok(mut file) = fs::File::create(&lock_path) {
         let _ = file.write_all(process::id().to_string().as_bytes());
     }
 }
 
-/// Start a Unix socket listener that waits for "show" messages
-/// from subsequent CLI invocations and shows the main window.
+#[cfg(unix)]
 fn start_ipc_listener(app_handle: tauri::AppHandle) {
+    use std::os::unix::net::UnixListener;
+
     let sock = socket_path();
-    let _ = fs::remove_file(&sock); // clean before bind
+    let _ = fs::remove_file(&sock);
 
     let listener = match UnixListener::bind(&sock) {
         Ok(l) => l,
@@ -89,7 +94,6 @@ fn start_ipc_listener(app_handle: tauri::AppHandle) {
         }
     };
 
-    // Non-blocking accept in a background thread
     std::thread::spawn(move || {
         for stream in listener.incoming() {
             if let Ok(mut stream) = stream {
@@ -108,9 +112,54 @@ fn start_ipc_listener(app_handle: tauri::AppHandle) {
     });
 }
 
+#[cfg(unix)]
 fn cleanup_lock() {
     let _ = fs::remove_file(lock_file_path());
     let _ = fs::remove_file(socket_path());
+}
+
+// ── Windows single-instance via lock file only ──
+
+#[cfg(windows)]
+fn check_single_instance() {
+    let lock_path = lock_file_path();
+
+    if lock_path.exists() {
+        // Simple lock file check — if file exists and process is alive, exit
+        if let Ok(mut file) = fs::File::open(&lock_path) {
+            let mut pid_str = String::new();
+            if file.read_to_string(&mut pid_str).is_ok() {
+                if let Ok(pid) = pid_str.trim().parse::<u32>() {
+                    // Check if process is still running via tasklist
+                    let status = process::Command::new("tasklist")
+                        .args(["/FI", &format!("PID eq {}", pid), "/NH"])
+                        .output();
+                    if let Ok(output) = status {
+                        let stdout = String::from_utf8_lossy(&output.stdout);
+                        if stdout.contains(&pid.to_string()) {
+                            eprintln!("Eye2020 is already running (PID {}).", pid);
+                            process::exit(0);
+                        }
+                    }
+                }
+            }
+        }
+        let _ = fs::remove_file(&lock_path);
+    }
+
+    if let Ok(mut file) = fs::File::create(&lock_path) {
+        let _ = file.write_all(process::id().to_string().as_bytes());
+    }
+}
+
+#[cfg(windows)]
+fn start_ipc_listener(_app_handle: tauri::AppHandle) {
+    // On Windows, single-instance is handled via lock file only
+}
+
+#[cfg(windows)]
+fn cleanup_lock() {
+    let _ = fs::remove_file(lock_file_path());
 }
 
 fn main() {
@@ -167,7 +216,7 @@ fn main() {
             // Setup tray icon and menu
             ui::tray::setup_tray(&handle, state_clone.clone())?;
 
-            // Setup screen monitoring (placeholder)
+            // Setup screen monitoring
             system::screen_monitor::setup_screen_monitoring(&handle, state_clone.clone());
 
             // Start the timer engine
@@ -184,7 +233,7 @@ fn main() {
                 app::timer_engine::run_status_notifications(notif_handle, notif_state).await;
             });
 
-            // Start IPC listener for single-instance "show" commands from CLI
+            // Start IPC listener for single-instance
             start_ipc_listener(handle.clone());
 
             Ok(())
@@ -194,7 +243,6 @@ fn main() {
         .run(|app, event| {
             match event {
                 tauri::RunEvent::Reopen { has_visible_windows, .. } => {
-                    // Dock icon clicked — show window
                     if !has_visible_windows {
                         if let Some(win) = app.get_webview_window("main") {
                             let _ = win.show();
