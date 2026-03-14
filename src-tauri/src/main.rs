@@ -162,6 +162,32 @@ fn cleanup_lock() {
     let _ = fs::remove_file(lock_file_path());
 }
 
+/// Create a symlink in /usr/local/bin so the app can be launched via `eye2020` from terminal.
+/// Silently skips if /usr/local/bin doesn't exist or if permission is denied.
+fn install_cli_symlink() {
+    let symlink_path = std::path::Path::new("/usr/local/bin/eye2020");
+    let app_binary = "/Applications/Eye2020.app/Contents/MacOS/Eye2020";
+
+    // Only create if the .app bundle exists and symlink doesn't already point correctly
+    if !std::path::Path::new(app_binary).exists() {
+        return;
+    }
+    if symlink_path.exists() {
+        // Already exists — check if it points to the right place
+        if let Ok(target) = fs::read_link(symlink_path) {
+            if target.to_str() == Some(app_binary) {
+                return; // already correct
+            }
+        }
+        let _ = fs::remove_file(symlink_path);
+    }
+
+    #[cfg(unix)]
+    {
+        let _ = std::os::unix::fs::symlink(app_binary, symlink_path);
+    }
+}
+
 fn main() {
     check_single_instance();
 
@@ -191,6 +217,7 @@ fn main() {
             commands::get_stats,
             commands::set_auto_start,
             commands::toggle_sound,
+            commands::open_url,
             commands::get_theme,
         ])
         .on_window_event(|window, event| {
@@ -213,6 +240,9 @@ fn main() {
             .inner_size(440.0, 750.0)
             .center()
             .build()?;
+
+            // Create CLI symlink so `eye2020` works from terminal
+            install_cli_symlink();
 
             // Setup tray icon and menu
             ui::tray::setup_tray(&handle, state_clone.clone())?;

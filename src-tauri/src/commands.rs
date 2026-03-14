@@ -138,6 +138,18 @@ pub async fn set_auto_start(state: State<'_, SharedAppState>, enabled: bool) -> 
 }
 
 #[tauri::command]
+pub async fn open_url(url: String) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| format!("Failed to open URL: {}", e))?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn get_theme() -> Result<String, String> {
     Ok(detect_macos_theme())
 }
