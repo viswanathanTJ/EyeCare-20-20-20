@@ -231,7 +231,7 @@ EyeCare/
 │       ├── ui/
 │       │   └── tray.rs           — Menu bar tray icon and dropdown menu
 │       ├── system/
-│       │   └── screen_monitor.rs — macOS screen sleep/wake detection (WIP)
+│       │   └── screen_monitor.rs — macOS screen sleep/wake detection
 │       └── data/
 │           └── stats_store.rs    — Statistics & settings persistence (SQLite)
 ├── README.md
@@ -274,7 +274,7 @@ EyeCare/
 - [x] Auto-start on login
 - [x] Dark mode theme detection
 - [x] Settings & Statistics panels with icon buttons
-- [ ] Screen sleep/wake detection
+- [x] Screen sleep/wake detection
 
 ## License
 
