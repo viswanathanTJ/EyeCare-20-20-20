@@ -163,28 +163,41 @@ fn cleanup_lock() {
 }
 
 /// Create a symlink in /usr/local/bin so the app can be launched via `eye2020` from terminal.
-/// Silently skips if /usr/local/bin doesn't exist or if permission is denied.
+/// Uses osascript to prompt for admin password if needed. Only runs once (skips if symlink exists).
 fn install_cli_symlink() {
     let symlink_path = std::path::Path::new("/usr/local/bin/eye2020");
     let app_binary = "/Applications/Eye2020.app/Contents/MacOS/Eye2020";
 
-    // Only create if the .app bundle exists and symlink doesn't already point correctly
+    // Only create if the .app bundle exists
     if !std::path::Path::new(app_binary).exists() {
         return;
     }
+
+    // Already exists and points correctly — nothing to do
     if symlink_path.exists() {
-        // Already exists — check if it points to the right place
         if let Ok(target) = fs::read_link(symlink_path) {
             if target.to_str() == Some(app_binary) {
-                return; // already correct
+                return;
             }
         }
-        let _ = fs::remove_file(symlink_path);
     }
 
+    // Try without sudo first
     #[cfg(unix)]
     {
-        let _ = std::os::unix::fs::symlink(app_binary, symlink_path);
+        if std::os::unix::fs::symlink(app_binary, symlink_path).is_ok() {
+            return;
+        }
+
+        // Need elevated permissions — use osascript for macOS password prompt
+        let script = format!(
+            "do shell script \"ln -sf '{}' '{}'\" with administrator privileges",
+            app_binary,
+            symlink_path.display()
+        );
+        let _ = std::process::Command::new("osascript")
+            .args(["-e", &script])
+            .output();
     }
 }
 

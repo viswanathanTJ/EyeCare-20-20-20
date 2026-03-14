@@ -4,6 +4,12 @@ A macOS menu bar utility that helps you follow the **20-20-20 rule** for eye str
 
 > Every **20 minutes** of screen time, look at something **20 feet** away for **20 seconds**.
 
+## Screenshots
+
+| Dashboard | Settings | Statistics |
+|:---------:|:--------:|:----------:|
+| ![Home](screenshots/HomePage.png) | ![Settings](screenshots/SettingsPage.png) | ![Stats](screenshots/StatsPage.png) |
+
 ## Features
 
 - **Menu bar timer** — Live countdown in the macOS menu bar
