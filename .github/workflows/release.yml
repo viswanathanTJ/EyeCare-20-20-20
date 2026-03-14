@@ -85,6 +85,10 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Delete existing draft release for this tag
         env:
           GH_TOKEN: ${{ github.token }}
@@ -96,6 +100,52 @@ jobs:
             gh api -X DELETE repos/${{ github.repository }}/releases/$RELEASE_ID
           fi
 
+      - name: Generate changelog
+        id: changelog
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          # Find previous tag
+          PREV_TAG=$(git tag --sort=-v:refname | grep -v "^${TAG}$" | head -1 || true)
+          if [ -n "$PREV_TAG" ]; then
+            RANGE="${PREV_TAG}..${TAG}"
+          else
+            RANGE="${TAG}"
+          fi
+          echo "## What's Changed" > changelog.md
+          echo "" >> changelog.md
+          # Features
+          FEATURES=$(git log "$RANGE" --pretty=format:"- %s" --grep="^[Aa]dd\|^[Ff]eat\|^[Nn]ew" 2>/dev/null || true)
+          if [ -n "$FEATURES" ]; then
+            echo "### 🚀 New Features" >> changelog.md
+            echo "$FEATURES" >> changelog.md
+            echo "" >> changelog.md
+          fi
+          # Fixes
+          FIXES=$(git log "$RANGE" --pretty=format:"- %s" --grep="^[Ff]ix\|^[Bb]ug" 2>/dev/null || true)
+          if [ -n "$FIXES" ]; then
+            echo "### 🐛 Bug Fixes" >> changelog.md
+            echo "$FIXES" >> changelog.md
+            echo "" >> changelog.md
+          fi
+          # All other commits
+          OTHER=$(git log "$RANGE" --pretty=format:"- %s" --grep="^[Aa]dd\|^[Ff]eat\|^[Nn]ew\|^[Ff]ix\|^[Bb]ug" --invert-grep 2>/dev/null || true)
+          if [ -n "$OTHER" ]; then
+            echo "### 🔄 Other Changes" >> changelog.md
+            echo "$OTHER" >> changelog.md
+            echo "" >> changelog.md
+          fi
+          echo "" >> changelog.md
+          echo "---" >> changelog.md
+          echo "### 📦 Downloads" >> changelog.md
+          echo "| Platform | File |" >> changelog.md
+          echo "|----------|------|" >> changelog.md
+          echo "| macOS (Apple Silicon) | \`Eye2020_*_aarch64.dmg\` |" >> changelog.md
+          echo "| macOS (Intel) | \`Eye2020_*_x64.dmg\` |" >> changelog.md
+          echo "| Linux (Debian/Ubuntu) | \`Eye2020_*_amd64.deb\` |" >> changelog.md
+          echo "| Linux (AppImage) | \`Eye2020_*_amd64.AppImage\` |" >> changelog.md
+          echo "| Windows (Installer) | \`Eye2020_*_x64-setup.exe\` |" >> changelog.md
+          echo "| Windows (MSI) | \`Eye2020_*_x64_en-US.msi\` |" >> changelog.md
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -105,5 +155,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           draft: true
-          generate_release_notes: true
+          body_path: changelog.md
           files: artifacts/**/*
