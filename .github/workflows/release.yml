@@ -85,6 +85,17 @@ jobs:
       contents: write
 
     steps:
+      - name: Delete existing draft release for this tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          RELEASE_ID=$(gh api repos/${{ github.repository }}/releases --jq ".[] | select(.tag_name==\"${TAG}\" and .draft==true) | .id" 2>/dev/null || true)
+          if [ -n "$RELEASE_ID" ]; then
+            echo "Deleting existing draft release $RELEASE_ID"
+            gh api -X DELETE repos/${{ github.repository }}/releases/$RELEASE_ID
+          fi
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
