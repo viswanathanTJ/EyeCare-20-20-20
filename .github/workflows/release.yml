@@ -153,17 +153,18 @@ jobs:
             echo "$OTHER" >> changelog.md
             echo "" >> changelog.md
           fi
+          VERSION="${TAG#v}"
           echo "" >> changelog.md
           echo "---" >> changelog.md
           echo "### 📦 Downloads" >> changelog.md
           echo "| Platform | File |" >> changelog.md
           echo "|----------|------|" >> changelog.md
-          echo "| macOS (Apple Silicon) | \`Eye2020_*_aarch64.dmg\` |" >> changelog.md
-          echo "| macOS (Intel) | \`Eye2020_*_x64.dmg\` |" >> changelog.md
-          echo "| Linux (Debian/Ubuntu) | \`Eye2020_*_amd64.deb\` |" >> changelog.md
-          echo "| Linux (AppImage) | \`Eye2020_*_amd64.AppImage\` |" >> changelog.md
-          echo "| Windows (Installer) | \`Eye2020_*_x64-setup.exe\` |" >> changelog.md
-          echo "| Windows (MSI) | \`Eye2020_*_x64_en-US.msi\` |" >> changelog.md
+          echo "| macOS (Apple Silicon) | \`Eye2020_${VERSION}_aarch64.dmg\` |" >> changelog.md
+          echo "| macOS (Intel) | \`Eye2020_${VERSION}_x64.dmg\` |" >> changelog.md
+          echo "| Linux (Debian/Ubuntu) | \`Eye2020_${VERSION}_amd64.deb\` |" >> changelog.md
+          echo "| Linux (AppImage) | \`Eye2020_${VERSION}_amd64.AppImage\` |" >> changelog.md
+          echo "| Windows (Installer) | \`Eye2020_${VERSION}_x64-setup.exe\` |" >> changelog.md
+          echo "| Windows (MSI) | \`Eye2020_${VERSION}_x64_en-US.msi\` |" >> changelog.md
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
