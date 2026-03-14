@@ -1,8 +1,6 @@
 /target
 src-tauri/target
 src-tauri/gen
-*.lock
-!Cargo.lock
 .DS_Store
 *.swp
 .eye2020.lock
