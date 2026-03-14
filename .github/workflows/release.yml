@@ -159,12 +159,13 @@ jobs:
           echo "---" >> changelog.md
           echo "### 📦 Downloads" >> changelog.md
           echo "" >> changelog.md
-          echo "- **macOS (Apple Silicon):** Eye2020_${VERSION}_aarch64.dmg" >> changelog.md
-          echo "- **macOS (Intel):** Eye2020_${VERSION}_x64.dmg" >> changelog.md
-          echo "- **Windows (Installer):** Eye2020_${VERSION}_x64-setup.exe" >> changelog.md
-          echo "- **Windows (MSI):** Eye2020_${VERSION}_x64_en-US.msi" >> changelog.md
-          echo "- **Linux (AppImage):** Eye2020_${VERSION}_amd64.AppImage" >> changelog.md
-          echo "- **Linux (deb):** Eye2020_${VERSION}_amd64.deb" >> changelog.md
+          BASE="https://github.com/${{ github.repository }}/releases/download/${TAG}"
+          echo "- **macOS (Apple Silicon):** [Eye2020_${VERSION}_aarch64.dmg](${BASE}/Eye2020_${VERSION}_aarch64.dmg)" >> changelog.md
+          echo "- **macOS (Intel):** [Eye2020_${VERSION}_x64.dmg](${BASE}/Eye2020_${VERSION}_x64.dmg)" >> changelog.md
+          echo "- **Windows (Installer):** [Eye2020_${VERSION}_x64-setup.exe](${BASE}/Eye2020_${VERSION}_x64-setup.exe)" >> changelog.md
+          echo "- **Windows (MSI):** [Eye2020_${VERSION}_x64_en-US.msi](${BASE}/Eye2020_${VERSION}_x64_en-US.msi)" >> changelog.md
+          echo "- **Linux (AppImage):** [Eye2020_${VERSION}_amd64.AppImage](${BASE}/Eye2020_${VERSION}_amd64.AppImage)" >> changelog.md
+          echo "- **Linux (deb):** [Eye2020_${VERSION}_amd64.deb](${BASE}/Eye2020_${VERSION}_amd64.deb)" >> changelog.md
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
