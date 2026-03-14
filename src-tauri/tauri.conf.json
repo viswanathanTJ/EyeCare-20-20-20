@@ -1,6 +1,6 @@
 {
   "productName": "Eye2020",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "identifier": "com.eye2020.desktop",
   "build": {
     "frontendDist": "../frontend"
