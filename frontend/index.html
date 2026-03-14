@@ -6,6 +6,12 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* Scrollbar — thin, left-aligned look, accent color */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #87ffe6; }
+
 :root {
   --bg: #1a1a2e;
   --text: #e0e0e0;
@@ -38,8 +44,8 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow-y: auto;
   user-select: none;
 }
 
@@ -62,7 +68,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  min-height: 100vh;
   padding: 30px;
   text-align: center;
 }
@@ -923,7 +929,7 @@ body {
     // Keyboard shortcuts
     document.addEventListener("keydown", function(e) {
       // Escape — close settings or stats panel
-      if (e.key === "Escape") {
+      if (e.key === "Escape" || e.key === "Backspace") {
         var settings = document.getElementById("settingsPanel");
         var stats = document.getElementById("statsPanel");
         if (settings.classList.contains("show")) {

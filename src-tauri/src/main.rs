@@ -254,6 +254,7 @@ fn main() {
             )
             .title("Eye2020")
             .inner_size(440.0, 750.0)
+            .min_inner_size(380.0, 600.0)
             .center()
             .build()?;
 

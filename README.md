@@ -6,9 +6,13 @@ A macOS menu bar utility that helps you follow the **20-20-20 rule** for eye str
 
 ## Screenshots
 
-| Dashboard | Settings | Statistics |
-|:---------:|:--------:|:----------:|
-| ![Home](screenshots/HomePage.png) | ![Settings](screenshots/SettingsPage.png) | ![Stats](screenshots/StatsPage.png) |
+| Dashboard | Break | Complete |
+|:---------:|:-----:|:--------:|
+| ![Home](screenshots/HomePage.png) | ![Break](screenshots/BreakPage.png) | ![Complete](screenshots/CompletePage.png) |
+
+| Settings | Statistics |
+|:--------:|:----------:|
+| ![Settings](screenshots/SettingsPage.png) | ![Stats](screenshots/StatsPage.png) |
 
 ## Features
 
