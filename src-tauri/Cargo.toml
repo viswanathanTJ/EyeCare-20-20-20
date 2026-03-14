@@ -1,0 +1,20 @@
+[package]
+name = "eye2020"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-notification = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["time", "sync", "macros", "rt"] }
+chrono = { version = "0.4", features = ["serde"] }
+rusqlite = { version = "0.31", features = ["bundled"] }
+rand = "0.8"
+dirs = "6"
+objc2 = "0.6"
+objc2-foundation = "0.3"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Eye2020</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #1a1a2e;
+  color: #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  padding: 30px;
+  text-align: center;
+}
+.app-title { font-size: 30px; font-weight: 200; letter-spacing: 5px; color: #64ffda; margin-bottom: 4px; }
+.app-sub { font-size: 13px; color: #4a5568; letter-spacing: 1px; margin-bottom: 32px; }
+.badge {
+  display: inline-block; padding: 6px 18px; border-radius: 20px;
+  font-size: 12px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 28px;
+}
+.badge-active { background: rgba(100,255,218,0.1); color: #64ffda; border: 1px solid rgba(100,255,218,0.2); }
+.badge-paused { background: rgba(255,183,77,0.1); color: #ffb74d; border: 1px solid rgba(255,183,77,0.2); }
+.badge-break { background: rgba(255,107,157,0.1); color: #ff6b9d; border: 1px solid rgba(255,107,157,0.2); }
+
+.ring-wrap { position: relative; width: 240px; height: 240px; margin: 0 auto 28px; }
+.ring-wrap svg { transform: rotate(-90deg); width: 240px; height: 240px; }
+.ring-bg { fill: none; stroke: #2a2a4a; stroke-width: 4; }
+.ring-fg { fill: none; stroke: #64ffda; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 628.32; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear; }
+.ring-fg.pink { stroke: #ff6b9d; }
+.ring-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; }
+.ring-time { font-size: 48px; font-weight: 200; color: #64ffda; line-height: 1; }
+.ring-time.pink { color: #ff6b9d; }
+.ring-label { font-size: 11px; color: #4a5568; text-transform: uppercase; letter-spacing: 2px; margin-top: 8px; }
+
+.tip { font-size: 14px; font-weight: 300; color: #8892b0; font-style: italic; padding: 0 24px; min-height: 22px; margin-bottom: 28px; }
+
+.btns { display: flex; gap: 14px; justify-content: center; margin-bottom: 20px; }
+.btn {
+  padding: 11px 26px; border-radius: 8px; font-size: 13px; cursor: pointer;
+  font-family: inherit; letter-spacing: 0.5px; transition: all 0.2s;
+}
+.btn-primary { background: rgba(100,255,218,0.1); border: 1px solid #64ffda; color: #64ffda; }
+.btn-primary:hover { background: rgba(100,255,218,0.2); }
+.btn-sec { background: transparent; border: 1px solid #3a3a5a; color: #8892b0; }
+.btn-sec:hover { background: rgba(136,146,176,0.1); }
+.btn-pink { background: rgba(255,107,157,0.1); border: 1px solid #ff6b9d; color: #ff6b9d; }
+.btn-pink:hover { background: rgba(255,107,157,0.2); }
+
+.modes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.chip {
+  padding: 5px 12px; border-radius: 14px; font-size: 11px;
+  color: #4a5568; border: 1px solid #2a2a4a; cursor: pointer; transition: all 0.2s;
+}
+.chip.on { color: #64ffda; border-color: #64ffda; background: rgba(100,255,218,0.05); }
+
+.cfg-btn {
+  width: 28px; height: 28px; border-radius: 50%; border: 1px solid #3a3a5a;
+  background: transparent; color: #8892b0; font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-family: inherit;
+  transition: all 0.2s;
+}
+.cfg-btn:hover { border-color: #64ffda; color: #64ffda; }
+
+/* Break overlay */
+.overlay {
+  display: none; position: fixed; inset: 0; background: #1a1a2e; z-index: 100;
+  flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center;
+}
+.overlay.show { display: flex; }
+.break-title { font-size: 22px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; color: #ff6b9d; margin-bottom: 32px; }
+.break-tip { font-size: 16px; color: #a8b2d1; font-style: italic; margin-bottom: 36px; padding: 0 24px; }
+.complete { font-size: 22px; color: #64ffda; font-weight: 300; }
+</style>
+</head>
+<body>
+
+<div class="dashboard" id="dashboard">
+  <div class="app-title">EYE2020</div>
+  <div class="app-sub">20 · 20 · 20 Rule</div>
+
+  <div class="badge badge-active" id="statusBadge">Monitoring</div>
+
+  <div class="ring-wrap">
+    <svg viewBox="0 0 240 240">
+      <circle class="ring-bg" cx="120" cy="120" r="100"/>
+      <circle class="ring-fg" id="progress" cx="120" cy="120" r="100"/>
+    </svg>
+    <div class="ring-center">
+      <div class="ring-time" id="timerTime">--:--</div>
+      <div class="ring-label" id="timerLabel">until next break</div>
+    </div>
+  </div>
+
+  <div class="tip" id="tipBox"></div>
+
+  <div class="btns">
+    <button class="btn btn-primary" id="takeBreakBtn">Take Break Now</button>
+    <button class="btn btn-sec" id="pauseBtn">Pause</button>
+  </div>
+
+  <div class="modes">
+    <span class="chip on" data-mode="WindowAndNotification">Window + Notif</span>
+    <span class="chip" data-mode="NotificationOnly">Notif Only</span>
+    <span class="chip" data-mode="WindowOnly">Window Only</span>
+    <span class="chip" data-mode="Silent">Silent</span>
+  </div>
+
+  <!-- CONFIG -->
+  <div style="margin-top:24px;display:flex;gap:20px;align-items:center;justify-content:center;">
+    <div style="text-align:center;">
+      <div style="font-size:10px;color:#4a5568;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Interval</div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button class="cfg-btn" id="intDown">−</button>
+        <span id="intVal" style="font-size:16px;color:#64ffda;min-width:50px;display:inline-block;">20 min</span>
+        <button class="cfg-btn" id="intUp">+</button>
+      </div>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:10px;color:#4a5568;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Break</div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button class="cfg-btn" id="brkDown">−</button>
+        <span id="brkVal" style="font-size:16px;color:#ff6b9d;min-width:50px;display:inline-block;">20 sec</span>
+        <button class="cfg-btn" id="brkUp">+</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BREAK OVERLAY -->
+<div class="overlay" id="breakOverlay">
+  <div class="break-title" id="breakTitle">Time for an Eye Break</div>
+
+  <div class="ring-wrap">
+    <svg viewBox="0 0 240 240">
+      <circle class="ring-bg" cx="120" cy="120" r="100"/>
+      <circle class="ring-fg pink" id="breakProgress" cx="120" cy="120" r="100"/>
+    </svg>
+    <div class="ring-center">
+      <div class="ring-time pink" id="breakCountdown">20</div>
+      <div class="ring-label">seconds</div>
+    </div>
+  </div>
+
+  <div class="break-tip" id="breakTip"></div>
+
+  <div class="btns" id="breakControls">
+    <button class="btn btn-pink" id="startBreakBtn">Start Break</button>
+    <button class="btn btn-sec" id="skipBtn">Skip</button>
+  </div>
+
+  <div class="complete" id="completeMsg" style="display:none">Eyes refreshed!</div>
+</div>
+
+<script>
+(function() {
+  var C = 2 * Math.PI * 100;
+  var breakDur = 20, breakRem = 20, bTimer = null, paused = false, total = 30;
+
+  function pad(n) { return String(n).padStart(2, "0"); }
+
+  function pollState() {
+    if (!window.__TAURI__) return;
+    window.__TAURI__.core.invoke("get_state").then(function(s) {
+      total = s.break_interval_secs;
+      breakDur = s.break_duration_secs;
+      document.getElementById("timerTime").textContent = pad(Math.floor(s.seconds_remaining / 60)) + ":" + pad(s.seconds_remaining % 60);
+      document.getElementById("progress").style.strokeDashoffset = C * (1 - s.seconds_remaining / total);
+
+      var b = document.getElementById("statusBadge");
+      b.className = "badge";
+      if (s.status === "Paused") {
+        b.textContent = "Paused"; b.className += " badge-paused";
+        document.getElementById("timerLabel").textContent = "paused";
+        document.getElementById("pauseBtn").textContent = "Resume"; paused = true;
+      } else if (s.status === "OnBreak") {
+        b.textContent = "On Break"; b.className += " badge-break";
+        document.getElementById("timerLabel").textContent = "break time";
+      } else {
+        b.textContent = "Monitoring"; b.className += " badge-active";
+        document.getElementById("timerLabel").textContent = "until next break";
+        document.getElementById("pauseBtn").textContent = "Pause"; paused = false;
+      }
+
+      document.querySelectorAll(".chip").forEach(function(c) {
+        c.className = c.dataset.mode === s.reminder_mode ? "chip on" : "chip";
+      });
+
+      // Update config display
+      document.getElementById("intVal").textContent = Math.round(s.break_interval_secs / 60) + " min";
+      document.getElementById("brkVal").textContent = s.break_duration_secs + " sec";
+    });
+  }
+
+  function showBreak(tip) {
+    document.getElementById("breakTip").textContent = '"' + (tip || "Look 20 feet away.") + '"';
+    breakRem = breakDur;
+    updBreak();
+    document.getElementById("breakOverlay").className = "overlay show";
+    document.getElementById("breakControls").style.display = "flex";
+    document.getElementById("startBreakBtn").style.display = "";
+    document.getElementById("completeMsg").style.display = "none";
+    document.getElementById("breakTitle").textContent = "Time for an Eye Break";
+  }
+
+  function updBreak() {
+    document.getElementById("breakCountdown").textContent = breakRem;
+    document.getElementById("breakProgress").style.strokeDashoffset = C * (1 - breakRem / breakDur);
+  }
+
+  function hideBreak() { document.getElementById("breakOverlay").className = "overlay"; }
+
+  function init() {
+    if (!window.__TAURI__ || !window.__TAURI__.core) { setTimeout(init, 200); return; }
+    var T = window.__TAURI__;
+
+    T.core.invoke("get_tip").then(function(t) { document.getElementById("tipBox").textContent = '"' + t + '"'; });
+
+    T.event.listen("break-due", function() {
+      T.core.invoke("get_tip").then(function(t) { showBreak(t); }).catch(function() { showBreak(null); });
+    });
+
+    document.getElementById("takeBreakBtn").onclick = function() {
+      T.core.invoke("take_break_now").then(function() { return T.core.invoke("get_tip"); })
+        .then(function(t) { showBreak(t); }).catch(function() { showBreak(null); });
+    };
+
+    document.getElementById("pauseBtn").onclick = function() {
+      T.core.invoke(paused ? "resume_monitoring" : "pause_monitoring");
+    };
+
+    document.getElementById("startBreakBtn").onclick = function() {
+      document.getElementById("startBreakBtn").style.display = "none";
+      breakRem = breakDur;
+      bTimer = setInterval(function() {
+        breakRem--; updBreak();
+        if (breakRem <= 0) {
+          clearInterval(bTimer);
+          T.core.invoke("finish_break");
+          document.getElementById("breakControls").style.display = "none";
+          document.getElementById("completeMsg").style.display = "block";
+          document.getElementById("breakTitle").textContent = "Break Complete";
+          setTimeout(hideBreak, 2000);
+        }
+      }, 1000);
+    };
+
+    document.getElementById("skipBtn").onclick = function() {
+      if (bTimer) clearInterval(bTimer);
+      T.core.invoke("skip_break");
+      hideBreak();
+    };
+
+    document.querySelectorAll(".chip").forEach(function(c) {
+      c.onclick = function() { T.core.invoke("set_reminder_mode", { mode: c.dataset.mode }); };
+    });
+
+    // Interval config: +/- 5 min (range 5–120 min)
+    var curInt = 20;
+    document.getElementById("intUp").onclick = function() {
+      curInt = Math.min(120, curInt + 5);
+      T.core.invoke("set_interval", { minutes: curInt });
+    };
+    document.getElementById("intDown").onclick = function() {
+      curInt = Math.max(5, curInt - 5);
+      T.core.invoke("set_interval", { minutes: curInt });
+    };
+
+    // Break duration config: +/- 5 sec (range 5–60 sec)
+    var curBrk = 20;
+    document.getElementById("brkUp").onclick = function() {
+      curBrk = Math.min(60, curBrk + 5);
+      T.core.invoke("set_break_duration", { seconds: curBrk });
+    };
+    document.getElementById("brkDown").onclick = function() {
+      curBrk = Math.max(5, curBrk - 5);
+      T.core.invoke("set_break_duration", { seconds: curBrk });
+    };
+
+    // Sync config values from state
+    T.core.invoke("get_state").then(function(s) {
+      curInt = Math.round(s.break_interval_secs / 60);
+      curBrk = s.break_duration_secs;
+    });
+
+    pollState();
+    setInterval(pollState, 1000);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
