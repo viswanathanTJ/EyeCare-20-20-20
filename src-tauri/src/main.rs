@@ -118,6 +118,12 @@ fn main() {
 
     let state = app_state::new_shared_state();
 
+    // Load persisted settings from SQLite
+    {
+        let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
+        rt.block_on(commands::load_persisted_settings(&state));
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
         .manage(state.clone())
@@ -133,6 +139,9 @@ fn main() {
             commands::toggle_timer_in_menu,
             commands::set_interval,
             commands::set_break_duration,
+            commands::get_stats,
+            commands::set_auto_start,
+            commands::get_theme,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {

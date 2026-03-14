@@ -34,6 +34,20 @@ pub struct AppState {
     pub reminder_mode: ReminderMode,
     /// Whether to show countdown in tray menu title
     pub show_timer_in_menu: bool,
+    /// Today's completed breaks
+    pub today_completed: i64,
+    /// Today's skipped breaks
+    pub today_skipped: i64,
+    /// Current streak (consecutive days with breaks)
+    pub current_streak: i64,
+    /// Longest streak ever
+    pub longest_streak: i64,
+    /// Total breaks all-time
+    pub total_breaks: i64,
+    /// Whether auto-start on login is enabled
+    pub auto_start: bool,
+    /// Current system appearance: "dark" or "light"
+    pub theme: String,
 }
 
 impl Default for AppState {
@@ -45,6 +59,13 @@ impl Default for AppState {
             break_duration_secs: 20,
             reminder_mode: ReminderMode::WindowAndNotification,
             show_timer_in_menu: true,
+            today_completed: 0,
+            today_skipped: 0,
+            current_streak: 0,
+            longest_streak: 0,
+            total_breaks: 0,
+            auto_start: false,
+            theme: "dark".to_string(),
         }
     }
 }

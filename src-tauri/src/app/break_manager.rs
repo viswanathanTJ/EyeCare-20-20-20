@@ -1,4 +1,5 @@
 use super::app_state::{MonitoringStatus, SharedAppState};
+use crate::data::stats_store::StatsStore;
 use rand::seq::SliceRandom;
 
 const TIPS: &[&str] = &[
@@ -19,12 +20,38 @@ pub fn random_tip() -> &'static str {
     TIPS.choose(&mut rng).unwrap_or(&TIPS[0])
 }
 
-/// Called when the user completes or skips a break.
-/// Resets the timer and returns to Active monitoring.
+fn refresh_stats(s: &mut super::app_state::AppState) {
+    if let Ok(store) = StatsStore::open() {
+        let (completed, skipped) = store.get_today_stats();
+        let (current, longest) = store.get_streak();
+        s.today_completed = completed;
+        s.today_skipped = skipped;
+        s.current_streak = current;
+        s.longest_streak = longest;
+        s.total_breaks = store.get_total_breaks();
+    }
+}
+
+/// Called when the user completes a break.
 pub async fn finish_break(state: &SharedAppState) {
+    if let Ok(store) = StatsStore::open() {
+        let _ = store.record_break_completed();
+    }
     let mut s = state.lock().await;
     s.seconds_remaining = s.break_interval_secs;
     s.status = MonitoringStatus::Active;
+    refresh_stats(&mut s);
+}
+
+/// Called when the user skips a break.
+pub async fn skip_break(state: &SharedAppState) {
+    if let Ok(store) = StatsStore::open() {
+        let _ = store.record_break_skipped();
+    }
+    let mut s = state.lock().await;
+    s.seconds_remaining = s.break_interval_secs;
+    s.status = MonitoringStatus::Active;
+    refresh_stats(&mut s);
 }
 
 /// Called when the user wants to pause monitoring.
