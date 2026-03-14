@@ -5,14 +5,58 @@
 <title>Eye2020</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #1a1a2e;
+  --text: #e0e0e0;
+  --muted: #4a5568;
+  --accent: #64ffda;
+  --pink: #ff6b9d;
+  --warn: #ffb74d;
+  --subtle: #8892b0;
+  --ring-bg: #2a2a4a;
+  --border: #3a3a5a;
+  --card-bg: rgba(255,255,255,0.03);
+  --panel-bg: #16162a;
+}
+
+body.light {
+  --bg: #f5f7fa;
+  --text: #2d3748;
+  --muted: #718096;
+  --accent: #0d9488;
+  --pink: #e11d48;
+  --warn: #d97706;
+  --subtle: #64748b;
+  --ring-bg: #e2e8f0;
+  --border: #cbd5e1;
+  --card-bg: rgba(0,0,0,0.03);
+  --panel-bg: #edf2f7;
+}
+
 body {
-  background: #1a1a2e;
-  color: #e0e0e0;
+  background: var(--bg);
+  color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
   height: 100vh;
   overflow: hidden;
   user-select: none;
 }
+
+/* Header bar with stats (left) and settings (right) */
+.header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+  display: flex; justify-content: space-between; padding: 12px 16px 0;
+}
+.settings-icon {
+  width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border);
+  background: transparent; color: var(--subtle); font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.settings-icon:hover { border-color: var(--accent); color: var(--accent); }
+.settings-icon.active { border-color: var(--accent); color: var(--accent); background: rgba(100,255,218,0.1); }
+
 .dashboard {
   display: flex;
   flex-direction: column;
@@ -22,68 +66,177 @@ body {
   padding: 30px;
   text-align: center;
 }
-.app-title { font-size: 30px; font-weight: 200; letter-spacing: 5px; color: #64ffda; margin-bottom: 4px; }
-.app-sub { font-size: 13px; color: #4a5568; letter-spacing: 1px; margin-bottom: 32px; }
+.app-title { font-size: 30px; font-weight: 200; letter-spacing: 5px; color: var(--accent); margin-bottom: 4px; }
+.app-sub { font-size: 13px; color: var(--muted); letter-spacing: 1px; margin-bottom: 32px; }
 .badge {
   display: inline-block; padding: 6px 18px; border-radius: 20px;
   font-size: 12px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 28px;
 }
-.badge-active { background: rgba(100,255,218,0.1); color: #64ffda; border: 1px solid rgba(100,255,218,0.2); }
-.badge-paused { background: rgba(255,183,77,0.1); color: #ffb74d; border: 1px solid rgba(255,183,77,0.2); }
-.badge-break { background: rgba(255,107,157,0.1); color: #ff6b9d; border: 1px solid rgba(255,107,157,0.2); }
+.badge-active { background: rgba(100,255,218,0.1); color: var(--accent); border: 1px solid rgba(100,255,218,0.2); }
+.badge-paused { background: rgba(255,183,77,0.1); color: var(--warn); border: 1px solid rgba(255,183,77,0.2); }
+.badge-break { background: rgba(255,107,157,0.1); color: var(--pink); border: 1px solid rgba(255,107,157,0.2); }
 
 .ring-wrap { position: relative; width: 240px; height: 240px; margin: 0 auto 28px; }
 .ring-wrap svg { transform: rotate(-90deg); width: 240px; height: 240px; }
-.ring-bg { fill: none; stroke: #2a2a4a; stroke-width: 4; }
-.ring-fg { fill: none; stroke: #64ffda; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 628.32; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear; }
-.ring-fg.pink { stroke: #ff6b9d; }
+.ring-bg { fill: none; stroke: var(--ring-bg); stroke-width: 4; }
+.ring-fg { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 628.32; stroke-dashoffset: 0; transition: stroke-dashoffset 1s linear; }
+.ring-fg.pink { stroke: var(--pink); }
 .ring-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; }
-.ring-time { font-size: 48px; font-weight: 200; color: #64ffda; line-height: 1; }
-.ring-time.pink { color: #ff6b9d; }
-.ring-label { font-size: 11px; color: #4a5568; text-transform: uppercase; letter-spacing: 2px; margin-top: 8px; }
+.ring-time { font-size: 48px; font-weight: 200; color: var(--accent); line-height: 1; }
+.ring-time.pink { color: var(--pink); }
+.ring-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-top: 8px; }
 
-.tip { font-size: 14px; font-weight: 300; color: #8892b0; font-style: italic; padding: 0 24px; min-height: 22px; margin-bottom: 28px; }
+.tip { font-size: 14px; font-weight: 300; color: var(--subtle); font-style: italic; padding: 0 24px; min-height: 22px; margin-bottom: 28px; }
 
 .btns { display: flex; gap: 14px; justify-content: center; margin-bottom: 20px; }
 .btn {
   padding: 11px 26px; border-radius: 8px; font-size: 13px; cursor: pointer;
   font-family: inherit; letter-spacing: 0.5px; transition: all 0.2s;
 }
-.btn-primary { background: rgba(100,255,218,0.1); border: 1px solid #64ffda; color: #64ffda; }
+.btn-primary { background: rgba(100,255,218,0.1); border: 1px solid var(--accent); color: var(--accent); }
 .btn-primary:hover { background: rgba(100,255,218,0.2); }
-.btn-sec { background: transparent; border: 1px solid #3a3a5a; color: #8892b0; }
-.btn-sec:hover { background: rgba(136,146,176,0.1); }
-.btn-pink { background: rgba(255,107,157,0.1); border: 1px solid #ff6b9d; color: #ff6b9d; }
+.btn-sec { background: transparent; border: 1px solid var(--border); color: var(--subtle); }
+.btn-sec:hover { background: var(--card-bg); }
+.btn-pink { background: rgba(255,107,157,0.1); border: 1px solid var(--pink); color: var(--pink); }
 .btn-pink:hover { background: rgba(255,107,157,0.2); }
 
-.modes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
-.chip {
-  padding: 5px 12px; border-radius: 14px; font-size: 11px;
-  color: #4a5568; border: 1px solid #2a2a4a; cursor: pointer; transition: all 0.2s;
+/* ========== SETTINGS PANEL ========== */
+.settings-panel {
+  display: none; position: fixed; inset: 0; z-index: 50;
+  background: var(--bg); overflow-y: auto;
+  flex-direction: column; padding: 0;
 }
-.chip.on { color: #64ffda; border-color: #64ffda; background: rgba(100,255,218,0.05); }
+.settings-panel.show { display: flex; }
 
+.settings-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+}
+.settings-title { font-size: 18px; font-weight: 300; letter-spacing: 2px; color: var(--accent); }
+.back-btn {
+  background: none; border: none; color: var(--subtle); font-size: 24px;
+  cursor: pointer; padding: 4px 8px; transition: color 0.2s;
+}
+.back-btn:hover { color: var(--accent); }
+
+.settings-body { padding: 20px; }
+
+.setting-section {
+  margin-bottom: 24px;
+}
+.section-label {
+  font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px;
+  margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border);
+}
+
+.setting-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-name { font-size: 14px; color: var(--text); }
+.setting-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.setting-control { display: flex; align-items: center; gap: 8px; }
 .cfg-btn {
-  width: 28px; height: 28px; border-radius: 50%; border: 1px solid #3a3a5a;
-  background: transparent; color: #8892b0; font-size: 16px; cursor: pointer;
+  width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border);
+  background: transparent; color: var(--subtle); font-size: 16px; cursor: pointer;
   display: flex; align-items: center; justify-content: center; font-family: inherit;
   transition: all 0.2s;
 }
-.cfg-btn:hover { border-color: #64ffda; color: #64ffda; }
+.cfg-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cfg-val { font-size: 16px; font-weight: 300; min-width: 60px; text-align: center; }
+.cfg-val.accent { color: var(--accent); }
+.cfg-val.pink { color: var(--pink); }
+
+/* Toggle */
+.toggle {
+  width: 40px; height: 22px; border-radius: 11px; background: var(--ring-bg);
+  position: relative; cursor: pointer; transition: background 0.2s; border: none;
+  flex-shrink: 0;
+}
+.toggle.on { background: var(--accent); }
+.toggle::after {
+  content: ""; position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; border-radius: 50%; background: var(--bg);
+  transition: transform 0.2s;
+}
+.toggle.on::after { transform: translateX(18px); }
+
+/* Theme selector */
+.theme-options { display: flex; gap: 8px; }
+.theme-btn {
+  padding: 6px 14px; border-radius: 8px; font-size: 12px; cursor: pointer;
+  border: 1px solid var(--border); background: transparent; color: var(--subtle);
+  font-family: inherit; transition: all 0.2s;
+}
+.theme-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(100,255,218,0.1); }
+
+/* Reminder mode in settings */
+.mode-options { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.mode-row {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  border-radius: 8px; cursor: pointer; transition: all 0.2s;
+  border: 1px solid transparent;
+}
+.mode-row:hover { background: var(--card-bg); }
+.mode-row.active { border-color: var(--accent); background: rgba(100,255,218,0.05); }
+.mode-dot {
+  width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--border);
+  flex-shrink: 0;
+}
+.mode-row.active .mode-dot { border-color: var(--accent); background: var(--accent); }
+.mode-name { font-size: 13px; color: var(--text); }
+
+/* ========== STATS PANEL ========== */
+.stats-panel {
+  display: none; position: fixed; inset: 0; z-index: 50;
+  background: var(--bg); overflow-y: auto;
+  flex-direction: column; padding: 0;
+}
+.stats-panel.show { display: flex; }
+
+.stats-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;
+}
+.stats-card {
+  padding: 16px; border-radius: 12px; text-align: center;
+  background: var(--card-bg); border: 1px solid var(--ring-bg);
+}
+.stats-card-val { font-size: 32px; font-weight: 200; color: var(--accent); }
+.stats-card-val.pink { color: var(--pink); }
+.stats-card-val.warn { color: var(--warn); }
+.stats-card-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+.stats-card.wide { grid-column: 1 / -1; }
 
 /* Break overlay */
 .overlay {
-  display: none; position: fixed; inset: 0; background: #1a1a2e; z-index: 100;
+  display: none; position: fixed; inset: 0; background: var(--bg); z-index: 100;
   flex-direction: column; align-items: center; justify-content: center; padding: 40px; text-align: center;
 }
 .overlay.show { display: flex; }
-.break-title { font-size: 22px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; color: #ff6b9d; margin-bottom: 32px; }
-.break-tip { font-size: 16px; color: #a8b2d1; font-style: italic; margin-bottom: 36px; padding: 0 24px; }
-.complete { font-size: 22px; color: #64ffda; font-weight: 300; }
+.break-title { font-size: 22px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; color: var(--pink); margin-bottom: 32px; }
+.break-tip { font-size: 16px; color: var(--subtle); font-style: italic; margin-bottom: 36px; padding: 0 24px; }
+.complete { font-size: 22px; color: var(--accent); font-weight: 300; }
 </style>
 </head>
 <body>
 
+<!-- HEADER -->
+<div class="header">
+  <button class="settings-icon" id="statsBtn" title="Stats">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+  </button>
+  <button class="settings-icon" id="settingsBtn" title="Settings">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+  </button>
+</div>
+
+<!-- DASHBOARD -->
 <div class="dashboard" id="dashboard">
   <div class="app-title">EYE2020</div>
   <div class="app-sub">20 · 20 · 20 Rule</div>
@@ -107,31 +260,146 @@ body {
     <button class="btn btn-primary" id="takeBreakBtn">Take Break Now</button>
     <button class="btn btn-sec" id="pauseBtn">Pause</button>
   </div>
+</div>
 
-  <div class="modes">
-    <span class="chip on" data-mode="WindowAndNotification">Window + Notif</span>
-    <span class="chip" data-mode="NotificationOnly">Notif Only</span>
-    <span class="chip" data-mode="WindowOnly">Window Only</span>
-    <span class="chip" data-mode="Silent">Silent</span>
+
+<!-- SETTINGS PANEL -->
+<div class="settings-panel" id="settingsPanel">
+  <div class="settings-header">
+    <div class="settings-title">Settings</div>
+    <button class="back-btn" id="settingsBack">&larr;</button>
   </div>
+  <div class="settings-body">
 
-  <!-- CONFIG -->
-  <div style="margin-top:24px;display:flex;gap:20px;align-items:center;justify-content:center;">
-    <div style="text-align:center;">
-      <div style="font-size:10px;color:#4a5568;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Interval</div>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <button class="cfg-btn" id="intDown">−</button>
-        <span id="intVal" style="font-size:16px;color:#64ffda;min-width:50px;display:inline-block;">20 min</span>
-        <button class="cfg-btn" id="intUp">+</button>
+    <!-- Theme -->
+    <div class="setting-section">
+      <div class="section-label">Appearance</div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-name">Theme</div>
+          <div class="setting-desc">Follow system or choose manually</div>
+        </div>
+        <div class="theme-options">
+          <button class="theme-btn" data-theme="system" id="themeSystem">System</button>
+          <button class="theme-btn" data-theme="dark" id="themeDark">Dark</button>
+          <button class="theme-btn" data-theme="light" id="themeLight">Light</button>
+        </div>
       </div>
     </div>
-    <div style="text-align:center;">
-      <div style="font-size:10px;color:#4a5568;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Break</div>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <button class="cfg-btn" id="brkDown">−</button>
-        <span id="brkVal" style="font-size:16px;color:#ff6b9d;min-width:50px;display:inline-block;">20 sec</span>
-        <button class="cfg-btn" id="brkUp">+</button>
+
+    <!-- Timer config -->
+    <div class="setting-section">
+      <div class="section-label">Timer</div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-name">Work Interval</div>
+          <div class="setting-desc">Time between breaks</div>
+        </div>
+        <div class="setting-control">
+          <button class="cfg-btn" id="intDown">&minus;</button>
+          <span class="cfg-val accent" id="intVal">20 min</span>
+          <button class="cfg-btn" id="intUp">+</button>
+        </div>
       </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-name">Break Duration</div>
+          <div class="setting-desc">How long each break lasts</div>
+        </div>
+        <div class="setting-control">
+          <button class="cfg-btn" id="brkDown">&minus;</button>
+          <span class="cfg-val pink" id="brkVal">20 sec</span>
+          <button class="cfg-btn" id="brkUp">+</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-name">Show Timer in Menu Bar</div>
+          <div class="setting-desc">Display countdown in tray</div>
+        </div>
+        <button class="toggle" id="timerMenuToggle"></button>
+      </div>
+    </div>
+
+    <!-- Reminder mode -->
+    <div class="setting-section">
+      <div class="section-label">Reminder Mode</div>
+      <div class="mode-options">
+        <div class="mode-row active" data-mode="WindowAndNotification">
+          <div class="mode-dot"></div>
+          <div class="mode-name">Window + Notification</div>
+        </div>
+        <div class="mode-row" data-mode="NotificationOnly">
+          <div class="mode-dot"></div>
+          <div class="mode-name">Notification Only</div>
+        </div>
+        <div class="mode-row" data-mode="WindowOnly">
+          <div class="mode-dot"></div>
+          <div class="mode-name">Window Only</div>
+        </div>
+        <div class="mode-row" data-mode="Silent">
+          <div class="mode-dot"></div>
+          <div class="mode-name">Silent</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- General -->
+    <div class="setting-section">
+      <div class="section-label">General</div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-name">Start on Login</div>
+          <div class="setting-desc">Auto-launch when you log in</div>
+        </div>
+        <button class="toggle" id="autoStartToggle"></button>
+      </div>
+    </div>
+
+    <!-- About -->
+    <div class="setting-section">
+      <div class="section-label">About</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;">
+        Eye2020 v0.1.0<br>
+        20-20-20 Rule for Eye Care<br>
+        Built with Rust + Tauri v2
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- STATS PANEL -->
+<div class="stats-panel" id="statsPanel">
+  <div class="settings-header">
+    <div class="settings-title">Statistics</div>
+    <button class="back-btn" id="statsBack">&larr;</button>
+  </div>
+  <div class="settings-body">
+    <div class="stats-grid">
+      <div class="stats-card">
+        <div class="stats-card-val" id="spCompleted">0</div>
+        <div class="stats-card-label">Breaks Today</div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-card-val pink" id="spSkipped">0</div>
+        <div class="stats-card-label">Skipped Today</div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-card-val warn" id="spStreak">0</div>
+        <div class="stats-card-label">Current Streak (days)</div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-card-val" id="spBest">0</div>
+        <div class="stats-card-label">Best Streak (days)</div>
+      </div>
+      <div class="stats-card wide">
+        <div class="stats-card-val" id="spTotal">0</div>
+        <div class="stats-card-label">All-Time Breaks Completed</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);text-align:center;line-height:1.6;">
+      Complete at least one break per day to keep your streak going.
     </div>
   </div>
 </div>
@@ -139,7 +407,6 @@ body {
 <!-- BREAK OVERLAY -->
 <div class="overlay" id="breakOverlay">
   <div class="break-title" id="breakTitle">Time for an Eye Break</div>
-
   <div class="ring-wrap">
     <svg viewBox="0 0 240 240">
       <circle class="ring-bg" cx="120" cy="120" r="100"/>
@@ -150,29 +417,48 @@ body {
       <div class="ring-label">seconds</div>
     </div>
   </div>
-
   <div class="break-tip" id="breakTip"></div>
-
   <div class="btns" id="breakControls">
     <button class="btn btn-pink" id="startBreakBtn">Start Break</button>
     <button class="btn btn-sec" id="skipBtn">Skip</button>
   </div>
-
   <div class="complete" id="completeMsg" style="display:none">Eyes refreshed!</div>
 </div>
 
 <script>
 (function() {
   var C = 2 * Math.PI * 100;
-  var breakDur = 20, breakRem = 20, bTimer = null, paused = false, total = 30;
+  var breakDur = 20, breakRem = 20, bTimer = null, paused = false, total = 1200;
+  var curInt = 20, curBrk = 20;
+  var themeChoice = "system";
 
   function pad(n) { return String(n).padStart(2, "0"); }
+
+  function applyTheme(theme, systemTheme) {
+    var isDark;
+    if (theme === "system") {
+      isDark = (systemTheme === "dark");
+    } else {
+      isDark = (theme === "dark");
+    }
+    if (isDark) {
+      document.body.classList.remove("light");
+    } else {
+      document.body.classList.add("light");
+    }
+    document.querySelectorAll(".theme-btn").forEach(function(b) {
+      b.classList.toggle("active", b.dataset.theme === theme);
+    });
+  }
 
   function pollState() {
     if (!window.__TAURI__) return;
     window.__TAURI__.core.invoke("get_state").then(function(s) {
       total = s.break_interval_secs;
       breakDur = s.break_duration_secs;
+      curInt = Math.round(s.break_interval_secs / 60);
+      curBrk = s.break_duration_secs;
+
       document.getElementById("timerTime").textContent = pad(Math.floor(s.seconds_remaining / 60)) + ":" + pad(s.seconds_remaining % 60);
       document.getElementById("progress").style.strokeDashoffset = C * (1 - s.seconds_remaining / total);
 
@@ -191,13 +477,31 @@ body {
         document.getElementById("pauseBtn").textContent = "Pause"; paused = false;
       }
 
-      document.querySelectorAll(".chip").forEach(function(c) {
-        c.className = c.dataset.mode === s.reminder_mode ? "chip on" : "chip";
+      // Update settings panel values
+      document.getElementById("intVal").textContent = curInt + " min";
+      document.getElementById("brkVal").textContent = curBrk + " sec";
+
+      // Stats panel
+      document.getElementById("spCompleted").textContent = s.today_completed || 0;
+      document.getElementById("spSkipped").textContent = s.today_skipped || 0;
+      document.getElementById("spStreak").textContent = s.current_streak || 0;
+      document.getElementById("spBest").textContent = s.longest_streak || 0;
+      document.getElementById("spTotal").textContent = s.total_breaks || 0;
+
+      // Toggles
+      var autoTog = document.getElementById("autoStartToggle");
+      autoTog.className = s.auto_start ? "toggle on" : "toggle";
+
+      var timerTog = document.getElementById("timerMenuToggle");
+      timerTog.className = s.show_timer_in_menu ? "toggle on" : "toggle";
+
+      // Reminder mode
+      document.querySelectorAll(".mode-row").forEach(function(r) {
+        r.classList.toggle("active", r.dataset.mode === s.reminder_mode);
       });
 
-      // Update config display
-      document.getElementById("intVal").textContent = Math.round(s.break_interval_secs / 60) + " min";
-      document.getElementById("brkVal").textContent = s.break_duration_secs + " sec";
+      // Theme
+      applyTheme(themeChoice, s.theme);
     });
   }
 
@@ -219,6 +523,19 @@ body {
 
   function hideBreak() { document.getElementById("breakOverlay").className = "overlay"; }
 
+  function toggleSettings() {
+    var panel = document.getElementById("settingsPanel");
+    var btn = document.getElementById("settingsBtn");
+    var isOpen = panel.classList.contains("show");
+    if (isOpen) {
+      panel.classList.remove("show");
+      btn.classList.remove("active");
+    } else {
+      panel.classList.add("show");
+      btn.classList.add("active");
+    }
+  }
+
   function init() {
     if (!window.__TAURI__ || !window.__TAURI__.core) { setTimeout(init, 200); return; }
     var T = window.__TAURI__;
@@ -229,6 +546,27 @@ body {
       T.core.invoke("get_tip").then(function(t) { showBreak(t); }).catch(function() { showBreak(null); });
     });
 
+    // Settings toggle
+    document.getElementById("settingsBtn").onclick = toggleSettings;
+    document.getElementById("settingsBack").onclick = toggleSettings;
+
+    // Stats toggle
+    document.getElementById("statsBtn").onclick = function() {
+      var panel = document.getElementById("statsPanel");
+      var btn = document.getElementById("statsBtn");
+      var isOpen = panel.classList.contains("show");
+      if (isOpen) {
+        panel.classList.remove("show"); btn.classList.remove("active");
+      } else {
+        panel.classList.add("show"); btn.classList.add("active");
+      }
+    };
+    document.getElementById("statsBack").onclick = function() {
+      document.getElementById("statsPanel").classList.remove("show");
+      document.getElementById("statsBtn").classList.remove("active");
+    };
+
+    // Dashboard buttons
     document.getElementById("takeBreakBtn").onclick = function() {
       T.core.invoke("take_break_now").then(function() { return T.core.invoke("get_tip"); })
         .then(function(t) { showBreak(t); }).catch(function() { showBreak(null); });
@@ -238,6 +576,7 @@ body {
       T.core.invoke(paused ? "resume_monitoring" : "pause_monitoring");
     };
 
+    // Break controls
     document.getElementById("startBreakBtn").onclick = function() {
       document.getElementById("startBreakBtn").style.display = "none";
       breakRem = breakDur;
@@ -260,12 +599,7 @@ body {
       hideBreak();
     };
 
-    document.querySelectorAll(".chip").forEach(function(c) {
-      c.onclick = function() { T.core.invoke("set_reminder_mode", { mode: c.dataset.mode }); };
-    });
-
-    // Interval config: +/- 5 min (range 5–120 min)
-    var curInt = 20;
+    // Settings: Interval +/-
     document.getElementById("intUp").onclick = function() {
       curInt = Math.min(120, curInt + 5);
       T.core.invoke("set_interval", { minutes: curInt });
@@ -275,8 +609,7 @@ body {
       T.core.invoke("set_interval", { minutes: curInt });
     };
 
-    // Break duration config: +/- 5 sec (range 5–60 sec)
-    var curBrk = 20;
+    // Settings: Break duration +/-
     document.getElementById("brkUp").onclick = function() {
       curBrk = Math.min(60, curBrk + 5);
       T.core.invoke("set_break_duration", { seconds: curBrk });
@@ -286,7 +619,33 @@ body {
       T.core.invoke("set_break_duration", { seconds: curBrk });
     };
 
-    // Sync config values from state
+    // Settings: Timer in menu bar toggle
+    document.getElementById("timerMenuToggle").onclick = function() {
+      T.core.invoke("toggle_timer_in_menu");
+    };
+
+    // Settings: Reminder modes
+    document.querySelectorAll(".mode-row").forEach(function(r) {
+      r.onclick = function() { T.core.invoke("set_reminder_mode", { mode: r.dataset.mode }); };
+    });
+
+    // Settings: Auto-start toggle
+    document.getElementById("autoStartToggle").onclick = function() {
+      var isOn = this.classList.contains("on");
+      T.core.invoke("set_auto_start", { enabled: !isOn });
+    };
+
+    // Settings: Theme buttons
+    document.querySelectorAll(".theme-btn").forEach(function(b) {
+      b.onclick = function() {
+        themeChoice = b.dataset.theme;
+        T.core.invoke("get_state").then(function(s) {
+          applyTheme(themeChoice, s.theme);
+        });
+      };
+    });
+
+    // Initial sync
     T.core.invoke("get_state").then(function(s) {
       curInt = Math.round(s.break_interval_secs / 60);
       curBrk = s.break_duration_secs;
