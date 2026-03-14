@@ -241,7 +241,9 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("error building Eye2020")
         .run(|app, event| {
+            #[allow(unused_variables)]
             match event {
+                #[cfg(target_os = "macos")]
                 tauri::RunEvent::Reopen { has_visible_windows, .. } => {
                     if !has_visible_windows {
                         if let Some(win) = app.get_webview_window("main") {
