@@ -9,9 +9,16 @@ mod ui;
 use app::app_state;
 use std::fs;
 use std::io::{Read, Write};
+use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
 use std::process;
 use tauri::Manager;
+
+fn socket_path() -> PathBuf {
+    let mut path = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/tmp"));
+    path.push(".eye2020.sock");
+    path
+}
 
 fn lock_file_path() -> PathBuf {
     let mut path = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/tmp"));
@@ -19,9 +26,25 @@ fn lock_file_path() -> PathBuf {
     path
 }
 
+/// Try to connect to an existing instance via Unix socket.
+/// If successful, send "show" command and exit.
+/// If not, we are the first instance — start normally.
 fn check_single_instance() {
+    let sock = socket_path();
     let lock_path = lock_file_path();
 
+    // Try connecting to existing instance
+    if sock.exists() {
+        if let Ok(mut stream) = UnixStream::connect(&sock) {
+            let _ = stream.write_all(b"show");
+            eprintln!("Eye2020 is already running — bringing window to front.");
+            process::exit(0);
+        }
+        // Socket exists but no one is listening — stale, clean up
+        let _ = fs::remove_file(&sock);
+    }
+
+    // Also clean up stale lock file
     if lock_path.exists() {
         if let Ok(mut file) = fs::File::open(&lock_path) {
             let mut pid_str = String::new();
@@ -30,13 +53,14 @@ fn check_single_instance() {
                     let status = process::Command::new("kill")
                         .args(["-0", &pid.to_string()])
                         .output();
-
                     if let Ok(output) = status {
                         if output.status.success() {
-                            eprintln!("Eye2020 is already running (PID {}).", pid);
-                            eprintln!("To stop it:  pkill -x eye2020");
-                            eprintln!("To show UI:  Click the Eye2020 icon in Dock or tray");
-                            process::exit(1);
+                            // Process alive but socket gone — try sending SIGUSR1 as fallback
+                            eprintln!("Eye2020 is already running (PID {}). Attempting to show window...", pid);
+                            let _ = process::Command::new("kill")
+                                .args(["-USR1", &pid.to_string()])
+                                .output();
+                            process::exit(0);
                         }
                     }
                 }
@@ -45,13 +69,48 @@ fn check_single_instance() {
         let _ = fs::remove_file(&lock_path);
     }
 
+    // Write lock file with our PID
     if let Ok(mut file) = fs::File::create(&lock_path) {
         let _ = file.write_all(process::id().to_string().as_bytes());
     }
 }
 
+/// Start a Unix socket listener that waits for "show" messages
+/// from subsequent CLI invocations and shows the main window.
+fn start_ipc_listener(app_handle: tauri::AppHandle) {
+    let sock = socket_path();
+    let _ = fs::remove_file(&sock); // clean before bind
+
+    let listener = match UnixListener::bind(&sock) {
+        Ok(l) => l,
+        Err(e) => {
+            eprintln!("Failed to bind IPC socket: {}", e);
+            return;
+        }
+    };
+
+    // Non-blocking accept in a background thread
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            if let Ok(mut stream) = stream {
+                let mut buf = [0u8; 16];
+                if let Ok(n) = stream.read(&mut buf) {
+                    let msg = String::from_utf8_lossy(&buf[..n]);
+                    if msg.starts_with("show") {
+                        if let Some(win) = app_handle.get_webview_window("main") {
+                            let _ = win.show();
+                            let _ = win.set_focus();
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
 fn cleanup_lock() {
     let _ = fs::remove_file(lock_file_path());
+    let _ = fs::remove_file(socket_path());
 }
 
 fn main() {
@@ -115,6 +174,9 @@ fn main() {
             tauri::async_runtime::spawn(async move {
                 app::timer_engine::run_status_notifications(notif_handle, notif_state).await;
             });
+
+            // Start IPC listener for single-instance "show" commands from CLI
+            start_ipc_listener(handle.clone());
 
             Ok(())
         })
