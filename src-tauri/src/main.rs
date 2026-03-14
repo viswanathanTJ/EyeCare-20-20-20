@@ -94,16 +94,67 @@ fn start_ipc_listener(app_handle: tauri::AppHandle) {
         }
     };
 
+    let ipc_state = app_handle.state::<app_state::SharedAppState>().inner().clone();
+
     std::thread::spawn(move || {
         for stream in listener.incoming() {
             if let Ok(mut stream) = stream {
-                let mut buf = [0u8; 16];
+                let mut buf = [0u8; 64];
                 if let Ok(n) = stream.read(&mut buf) {
-                    let msg = String::from_utf8_lossy(&buf[..n]);
+                    let msg = String::from_utf8_lossy(&buf[..n]).to_string();
+
                     if msg.starts_with("show") {
                         if let Some(win) = app_handle.get_webview_window("main") {
                             let _ = win.show();
                             let _ = win.set_focus();
+                        }
+                    } else if msg == "pause" {
+                        let st = ipc_state.clone();
+                        tauri::async_runtime::block_on(async {
+                            let mut s = st.lock().await;
+                            s.status = app_state::MonitoringStatus::Paused;
+                        });
+                    } else if msg == "resume" {
+                        let st = ipc_state.clone();
+                        tauri::async_runtime::block_on(async {
+                            let mut s = st.lock().await;
+                            s.status = app_state::MonitoringStatus::Active;
+                        });
+                    } else if msg == "break" {
+                        let st = ipc_state.clone();
+                        tauri::async_runtime::block_on(async {
+                            let mut s = st.lock().await;
+                            s.seconds_remaining = 0;
+                            s.status = app_state::MonitoringStatus::OnBreak;
+                        });
+                    } else if msg == "status" {
+                        let st = ipc_state.clone();
+                        let response = tauri::async_runtime::block_on(async {
+                            let s = st.lock().await;
+                            let mins = s.seconds_remaining / 60;
+                            let secs = s.seconds_remaining % 60;
+                            format!(
+                                "Status: {:?}\nNext break: {:02}:{:02}\nInterval: {} min\nBreaks today: {}",
+                                s.status, mins, secs,
+                                s.break_interval_secs / 60,
+                                s.today_completed
+                            )
+                        });
+                        let _ = stream.write_all(response.as_bytes());
+                    } else if msg == "quit" {
+                        app_handle.exit(0);
+                    } else if msg.starts_with("interval:") {
+                        if let Some(val) = msg.strip_prefix("interval:") {
+                            if let Ok(mins) = val.parse::<u64>() {
+                                if mins >= 1 && mins <= 120 {
+                                    let st = ipc_state.clone();
+                                    tauri::async_runtime::block_on(async {
+                                        let mut s = st.lock().await;
+                                        s.break_interval_secs = mins * 60;
+                                        s.seconds_remaining = mins * 60;
+                                    });
+                                }
+                            }
                         }
                     }
                 }
@@ -201,7 +252,121 @@ fn install_cli_symlink() {
     }
 }
 
+fn print_usage() {
+    eprintln!("Eye2020 — 20-20-20 Eye Care App");
+    eprintln!();
+    eprintln!("Usage: eye2020 [OPTION]");
+    eprintln!();
+    eprintln!("Options:");
+    eprintln!("  --pause       Pause the timer");
+    eprintln!("  --resume      Resume the timer");
+    eprintln!("  --break       Trigger a break now");
+    eprintln!("  --status      Print current status");
+    eprintln!("  --quit        Quit the running instance");
+    eprintln!("  --interval N  Set work interval to N minutes");
+    eprintln!("  --version     Show version");
+    eprintln!("  --help        Show this help");
+}
+
+/// Send a command to the running instance via IPC socket.
+/// Returns true if the command was sent successfully.
+#[cfg(unix)]
+fn send_ipc_command(cmd: &str) -> bool {
+    use std::os::unix::net::UnixStream;
+    let sock = socket_path();
+    if let Ok(mut stream) = UnixStream::connect(&sock) {
+        let _ = stream.write_all(cmd.as_bytes());
+        // For status, read the response
+        if cmd == "status" {
+            let mut buf = [0u8; 256];
+            if let Ok(n) = stream.read(&mut buf) {
+                let response = String::from_utf8_lossy(&buf[..n]);
+                println!("{}", response);
+            }
+        }
+        true
+    } else {
+        false
+    }
+}
+
+#[cfg(windows)]
+fn send_ipc_command(_cmd: &str) -> bool {
+    false
+}
+
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+
+    if args.len() > 1 {
+        match args[1].as_str() {
+            "--version" | "-v" => {
+                println!("Eye2020 v{}", env!("CARGO_PKG_VERSION"));
+                process::exit(0);
+            }
+            "--help" | "-h" => {
+                print_usage();
+                process::exit(0);
+            }
+            "--pause" => {
+                if send_ipc_command("pause") {
+                    eprintln!("Timer paused.");
+                } else {
+                    eprintln!("Eye2020 is not running.");
+                }
+                process::exit(0);
+            }
+            "--resume" => {
+                if send_ipc_command("resume") {
+                    eprintln!("Timer resumed.");
+                } else {
+                    eprintln!("Eye2020 is not running.");
+                }
+                process::exit(0);
+            }
+            "--break" => {
+                if send_ipc_command("break") {
+                    eprintln!("Break triggered.");
+                } else {
+                    eprintln!("Eye2020 is not running.");
+                }
+                process::exit(0);
+            }
+            "--status" => {
+                if !send_ipc_command("status") {
+                    eprintln!("Eye2020 is not running.");
+                }
+                process::exit(0);
+            }
+            "--quit" => {
+                if send_ipc_command("quit") {
+                    eprintln!("Eye2020 shutting down.");
+                } else {
+                    eprintln!("Eye2020 is not running.");
+                }
+                process::exit(0);
+            }
+            "--interval" => {
+                if args.len() > 2 {
+                    let cmd = format!("interval:{}", args[2]);
+                    if send_ipc_command(&cmd) {
+                        eprintln!("Interval set to {} minutes.", args[2]);
+                    } else {
+                        eprintln!("Eye2020 is not running.");
+                    }
+                } else {
+                    eprintln!("Usage: eye2020 --interval <minutes>");
+                }
+                process::exit(0);
+            }
+            _ => {
+                eprintln!("Unknown option: {}", args[1]);
+                print_usage();
+                process::exit(1);
+            }
+        }
+    }
+
     check_single_instance();
 
     let state = app_state::new_shared_state();
