@@ -190,6 +190,7 @@ fn main() {
             commands::set_break_duration,
             commands::get_stats,
             commands::set_auto_start,
+            commands::toggle_sound,
             commands::get_theme,
         ])
         .on_window_event(|window, event| {

@@ -21,9 +21,10 @@ pub async fn run_timer(app: AppHandle, state: SharedAppState) {
                 if s.seconds_remaining == 0 {
                     s.status = MonitoringStatus::OnBreak;
                     let reminder_mode = s.reminder_mode;
+                    let sound = s.sound_enabled;
                     drop(s);
 
-                    trigger_break(&app, reminder_mode);
+                    trigger_break(&app, reminder_mode, sound);
                     continue;
                 }
 
@@ -49,8 +50,13 @@ pub async fn run_timer(app: AppHandle, state: SharedAppState) {
     }
 }
 
-fn trigger_break(app: &AppHandle, mode: ReminderMode) {
+fn trigger_break(app: &AppHandle, mode: ReminderMode, sound: bool) {
     let tip = break_manager::random_tip();
+
+    // Play system sound if enabled
+    if sound {
+        play_break_sound();
+    }
 
     // Send notification if enabled
     match mode {
@@ -74,6 +80,19 @@ fn trigger_break(app: &AppHandle, mode: ReminderMode) {
         _ => {
             let _ = app.emit("break-due", ());
         }
+    }
+}
+
+/// Play the macOS system sound for break reminder
+fn play_break_sound() {
+    #[cfg(target_os = "macos")]
+    {
+        // Use afplay to play a gentle macOS system sound
+        std::thread::spawn(|| {
+            let _ = std::process::Command::new("afplay")
+                .arg("/System/Library/Sounds/Glass.aiff")
+                .output();
+        });
     }
 }
 

@@ -44,6 +44,8 @@ pub struct AppState {
     pub longest_streak: i64,
     /// Total breaks all-time
     pub total_breaks: i64,
+    /// Whether to play sound on break reminder
+    pub sound_enabled: bool,
     /// Whether auto-start on login is enabled
     pub auto_start: bool,
     /// Current system appearance: "dark" or "light"
@@ -64,6 +66,7 @@ impl Default for AppState {
             current_streak: 0,
             longest_streak: 0,
             total_breaks: 0,
+            sound_enabled: true,
             auto_start: false,
             theme: "dark".to_string(),
         }

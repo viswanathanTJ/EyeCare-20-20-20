@@ -383,6 +383,13 @@ body {
       <div class="section-label">General</div>
       <div class="setting-row">
         <div>
+          <div class="setting-name">Break Sound</div>
+          <div class="setting-desc">Play sound when break is due</div>
+        </div>
+        <button class="toggle on" id="soundToggle"></button>
+      </div>
+      <div class="setting-row">
+        <div>
           <div class="setting-name">Start on Login</div>
           <div class="setting-desc">Auto-launch when you log in</div>
         </div>
@@ -529,6 +536,9 @@ body {
       var timerTog = document.getElementById("timerMenuToggle");
       timerTog.className = s.show_timer_in_menu ? "toggle on" : "toggle";
 
+      var soundTog = document.getElementById("soundToggle");
+      soundTog.className = s.sound_enabled ? "toggle on" : "toggle";
+
       // Main panel config display
       document.getElementById("intValMain").textContent = curInt + " min";
       document.getElementById("brkValMain").textContent = curBrk + " sec";
@@ -674,6 +684,10 @@ body {
     document.getElementById("autoStartToggle").onclick = function() {
       var isOn = this.classList.contains("on");
       T.core.invoke("set_auto_start", { enabled: !isOn });
+    };
+
+    document.getElementById("soundToggle").onclick = function() {
+      T.core.invoke("toggle_sound");
     };
 
     // Settings: Theme buttons

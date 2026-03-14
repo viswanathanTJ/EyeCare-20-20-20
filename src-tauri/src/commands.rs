@@ -110,6 +110,16 @@ pub async fn get_stats() -> Result<serde_json::Value, String> {
 }
 
 #[tauri::command]
+pub async fn toggle_sound(state: State<'_, SharedAppState>) -> Result<bool, String> {
+    let mut s = state.lock().await;
+    s.sound_enabled = !s.sound_enabled;
+    if let Ok(store) = StatsStore::open() {
+        let _ = store.save_setting("sound_enabled", &s.sound_enabled.to_string());
+    }
+    Ok(s.sound_enabled)
+}
+
+#[tauri::command]
 pub async fn set_auto_start(state: State<'_, SharedAppState>, enabled: bool) -> Result<(), String> {
     let mut s = state.lock().await;
     s.auto_start = enabled;
@@ -175,6 +185,11 @@ pub async fn load_persisted_settings(state: &SharedAppState) {
         if let Some(val) = store.load_setting("show_timer_in_menu") {
             if let Ok(b) = val.parse::<bool>() {
                 s.show_timer_in_menu = b;
+            }
+        }
+        if let Some(val) = store.load_setting("sound_enabled") {
+            if let Ok(b) = val.parse::<bool>() {
+                s.sound_enabled = b;
             }
         }
         if let Some(val) = store.load_setting("auto_start") {
