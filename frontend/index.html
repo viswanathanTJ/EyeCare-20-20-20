@@ -17,7 +17,7 @@
   --text: #e0e0e0;
   --muted: #4a5568;
   --accent: #64ffda;
-  --pink: #ff6b9d;
+  --pink: #ffd700;
   --warn: #ffb74d;
   --subtle: #8892b0;
   --ring-bg: #2a2a4a;
@@ -31,7 +31,7 @@ body.light {
   --text: #2d3748;
   --muted: #718096;
   --accent: #0d9488;
-  --pink: #e11d48;
+  --pink: #d4a017;
   --warn: #d97706;
   --subtle: #64748b;
   --ring-bg: #e2e8f0;
@@ -81,7 +81,7 @@ body {
 }
 .badge-active { background: rgba(100,255,218,0.1); color: var(--accent); border: 1px solid rgba(100,255,218,0.2); }
 .badge-paused { background: rgba(255,183,77,0.1); color: var(--warn); border: 1px solid rgba(255,183,77,0.2); }
-.badge-break { background: rgba(255,107,157,0.1); color: var(--pink); border: 1px solid rgba(255,107,157,0.2); }
+.badge-break { background: rgba(255,215,0,0.1); color: var(--pink); border: 1px solid rgba(255,215,0,0.2); }
 
 .ring-wrap { position: relative; width: 240px; height: 240px; margin: 0 auto 28px; }
 .ring-wrap svg { transform: rotate(-90deg); width: 240px; height: 240px; }
@@ -104,8 +104,8 @@ body {
 .btn-primary:hover { background: rgba(100,255,218,0.2); }
 .btn-sec { background: transparent; border: 1px solid var(--border); color: var(--subtle); }
 .btn-sec:hover { background: var(--card-bg); }
-.btn-pink { background: rgba(255,107,157,0.1); border: 1px solid var(--pink); color: var(--pink); }
-.btn-pink:hover { background: rgba(255,107,157,0.2); }
+.btn-pink { background: rgba(255,215,0,0.1); border: 1px solid var(--pink); color: var(--pink); }
+.btn-pink:hover { background: rgba(255,215,0,0.2); }
 
 /* Mode chips */
 .modes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
@@ -411,7 +411,7 @@ body {
           <div class="setting-name">Break Color</div>
           <div class="setting-desc">Break timer accent</div>
         </div>
-        <input type="color" id="pinkPicker" value="#ff6b9d" style="width:36px;height:28px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;padding:0;">
+        <input type="color" id="pinkPicker" value="#ffd700" style="width:36px;height:28px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;padding:0;">
       </div>
       <div class="setting-row">
         <div></div>
@@ -595,7 +595,7 @@ body {
   var breakDur = 20, breakRem = 20, bTimer = null, paused = false, total = 1200;
   var curInt = 20, curBrk = 20;
   var themeChoice = "system";
-  var defaultAccent = "#64ffda", defaultPink = "#ff6b9d";
+  var defaultAccent = "#64ffda", defaultPink = "#ffd700";
   var customAccent = localStorage.getItem("accent") || "";
   var customPink = localStorage.getItem("pink") || "";
 
