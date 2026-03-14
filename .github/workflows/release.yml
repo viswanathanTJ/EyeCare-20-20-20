@@ -66,7 +66,8 @@ jobs:
             libjavascriptcoregtk-4.1-dev
 
       - name: Install Tauri CLI
-        run: command -v cargo-tauri || cargo install tauri-cli --version "^2"
+        shell: bash
+        run: cargo tauri --version 2>/dev/null || cargo install tauri-cli --version "^2"
 
       - name: Build Tauri app
         run: cargo tauri build --target ${{ matrix.target }}
