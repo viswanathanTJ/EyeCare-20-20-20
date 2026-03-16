@@ -280,6 +280,22 @@ EyeCare/
 - [x] Settings & Statistics panels with icon buttons
 - [x] Screen sleep/wake detection
 
+## macOS Gatekeeper Notice
+
+When opening the app for the first time on macOS, you may see **"Apple could not verify this app"**. This is because the app is not notarized with an Apple Developer certificate.
+
+To fix this, run in Terminal:
+```bash
+xattr -cr /Applications/Eye2020.app
+```
+
+Or if opening from a DMG:
+```bash
+xattr -cr /Volumes/Eye2020/Eye2020.app
+```
+
+Alternatively, **right-click the app → Open** to bypass the warning.
+
 ## License
 
 MIT

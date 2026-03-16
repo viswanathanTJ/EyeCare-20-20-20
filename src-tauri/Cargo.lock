@@ -942,7 +942,7 @@ dependencies = [
 
 [[package]]
 name = "eye2020"
-version = "0.1.5"
+version = "0.1.7"
 dependencies = [
  "chrono",
  "dirs",
