@@ -23,18 +23,13 @@ echo "==> Mounting original DMG..."
 MOUNT_DIR=$(hdiutil attach "$DMG_PATH" -nobrowse | grep "$VOLUME_NAME" | awk '{print $3}')
 echo "    Mounted at $MOUNT_DIR"
 
-echo "==> Copying DMG contents..."
-STAGING_DIR=$(mktemp -d)
-cp -R "$MOUNT_DIR/"* "$STAGING_DIR/" 2>/dev/null || true
-
 echo "==> Unmounting original..."
 hdiutil detach "$MOUNT_DIR"
 
-echo "==> Replacing app with signed version..."
-rm -rf "$STAGING_DIR/$VOLUME_NAME.app"
+echo "==> Building clean DMG contents..."
+STAGING_DIR=$(mktemp -d)
 cp -R "$APP_PATH" "$STAGING_DIR/"
-
-echo "==> Adding Install.command..."
+ln -s /Applications "$STAGING_DIR/Applications"
 cp scripts/Install.command "$STAGING_DIR/"
 chmod +x "$STAGING_DIR/Install.command"
 
