@@ -65,7 +65,11 @@ jobs:
         env:
           CARGO_INCREMENTAL: 0
 
+<<<<<<< ahamed-2020
       - name: Ad-hoc sign and re-package macOS DMG
+=======
+      - name: Ad-hoc sign macOS app and repack DMG
+>>>>>>> master
         if: startsWith(matrix.platform, 'macos')
         run: |
           # Sign the .app bundle
@@ -74,6 +78,7 @@ jobs:
           codesign --force --deep --sign - "$APP_PATH"
           codesign --verify --verbose "$APP_PATH"
 
+<<<<<<< ahamed-2020
           # Re-create the DMG with the signed app
           DMG_PATH=$(find src-tauri/target/${{ matrix.target }}/release/bundle/dmg -name "*.dmg" -maxdepth 1)
           DMG_NAME=$(basename "$DMG_PATH")
@@ -92,6 +97,37 @@ jobs:
           hdiutil create -volname "$VOLUME_NAME" -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_PATH"
           rm -rf "$STAGING_DIR"
           echo "Re-created DMG: $DMG_PATH"
+=======
+          # Mount the Tauri-generated DMG (read-only), copy contents, add Install.command, repack
+          DMG_PATH=$(find src-tauri/target/${{ matrix.target }}/release/bundle/dmg -name "*.dmg" -maxdepth 1)
+          VOLUME_NAME="Eye2020"
+
+          # Mount original DMG
+          MOUNT_DIR=$(hdiutil attach "$DMG_PATH" -nobrowse | grep "$VOLUME_NAME" | awk '{print $3}')
+          echo "Mounted at $MOUNT_DIR"
+
+          # Copy DMG contents to staging dir
+          STAGING_DIR=$(mktemp -d)
+          cp -R "$MOUNT_DIR/"* "$STAGING_DIR/" 2>/dev/null || true
+          cp -R "$MOUNT_DIR/".* "$STAGING_DIR/" 2>/dev/null || true
+
+          # Unmount original
+          hdiutil detach "$MOUNT_DIR"
+
+          # Replace the unsigned app with our signed one
+          rm -rf "$STAGING_DIR/$VOLUME_NAME.app"
+          cp -R "$APP_PATH" "$STAGING_DIR/"
+
+          # Add installer script
+          cp scripts/Install.command "$STAGING_DIR/"
+          chmod +x "$STAGING_DIR/Install.command"
+
+          # Repack DMG
+          rm -f "$DMG_PATH"
+          hdiutil create -volname "$VOLUME_NAME" -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_PATH"
+          rm -rf "$STAGING_DIR"
+          echo "Repacked DMG: $DMG_PATH"
+>>>>>>> master
 
       - name: Upload macOS artifacts
         if: startsWith(matrix.platform, 'macos')
