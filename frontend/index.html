@@ -182,6 +182,33 @@
         </div>
       </div>
 
+      <!-- Snooze config -->
+      <div class="setting-section">
+        <div class="section-label">Snooze</div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-name">Snooze Duration</div>
+            <div class="setting-desc">Delay before re-reminding</div>
+          </div>
+          <div class="setting-control">
+            <button class="cfg-btn" id="snzDurDown">&minus;</button>
+            <span class="cfg-val accent" id="snzDurVal">5 min</span>
+            <button class="cfg-btn" id="snzDurUp">+</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div>
+            <div class="setting-name">Max Snoozes</div>
+            <div class="setting-desc">Snoozes allowed per break</div>
+          </div>
+          <div class="setting-control">
+            <button class="cfg-btn" id="snzMaxDown">&minus;</button>
+            <span class="cfg-val accent" id="snzMaxVal">3</span>
+            <button class="cfg-btn" id="snzMaxUp">+</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Reminder mode -->
       <div class="setting-section">
         <div class="section-label">Reminder Mode</div>
@@ -302,6 +329,9 @@
     <div class="btns" id="breakControls">
       <button class="btn btn-pink" id="startBreakBtn">Start Break</button>
       <button class="btn btn-sec" id="skipBtn">Skip</button>
+    </div>
+    <div class="btns" id="snoozeWrap" style="margin-top:-8px;">
+      <button class="btn btn-snooze" id="snoozeBtn">Snooze</button>
     </div>
     <div id="completeMsg" style="display:none">
       <div class="confetti-container" id="confettiBox"></div>

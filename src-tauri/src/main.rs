@@ -11,7 +11,7 @@ use std::fs;
 use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::process;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 fn lock_file_path() -> PathBuf {
     let mut path = dirs::home_dir().unwrap_or_else(|| PathBuf::from(default_tmp()));
@@ -126,6 +126,8 @@ fn start_ipc_listener(app_handle: tauri::AppHandle) {
                             let mut s = st.lock().await;
                             s.seconds_remaining = 0;
                             s.status = app_state::MonitoringStatus::OnBreak;
+                            s.snooze_count = 0;
+                            s.snooze_remaining = 0;
                         });
                     } else if msg == "status" {
                         let st = ipc_state.clone();
@@ -385,6 +387,9 @@ fn main() {
             commands::get_tip,
             commands::finish_break,
             commands::skip_break,
+            commands::snooze_break,
+            commands::set_snooze_duration,
+            commands::set_max_snoozes,
             commands::pause_monitoring,
             commands::resume_monitoring,
             commands::take_break_now,
@@ -402,9 +407,29 @@ fn main() {
             commands::get_theme,
         ])
         .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                window.hide().unwrap_or_default();
-                api.prevent_close();
+            match event {
+                tauri::WindowEvent::CloseRequested { api, .. } => {
+                    window.hide().unwrap_or_default();
+                    api.prevent_close();
+                }
+                tauri::WindowEvent::Focused(false) => {
+                    // Auto-snooze when window loses focus during a break
+                    let state = window.state::<app_state::SharedAppState>().inner().clone();
+                    let app = window.app_handle().clone();
+                    tauri::async_runtime::spawn(async move {
+                        let can_snooze = {
+                            let s = state.lock().await;
+                            s.status == app_state::MonitoringStatus::OnBreak
+                                && s.snooze_count < s.max_snoozes
+                        };
+                        if can_snooze {
+                            if app::break_manager::snooze_break(&state).await.is_ok() {
+                                let _ = app.emit("break-snoozed", ());
+                            }
+                        }
+                    });
+                }
+                _ => {}
             }
         })
         .setup(move |app| {

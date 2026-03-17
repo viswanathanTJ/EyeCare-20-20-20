@@ -40,6 +40,8 @@ pub async fn finish_break(state: &SharedAppState) {
     let mut s = state.lock().await;
     s.seconds_remaining = s.break_interval_secs;
     s.status = MonitoringStatus::Active;
+    s.snooze_count = 0;
+    s.snooze_remaining = 0;
     refresh_stats(&mut s);
 }
 
@@ -51,7 +53,22 @@ pub async fn skip_break(state: &SharedAppState) {
     let mut s = state.lock().await;
     s.seconds_remaining = s.break_interval_secs;
     s.status = MonitoringStatus::Active;
+    s.snooze_count = 0;
+    s.snooze_remaining = 0;
     refresh_stats(&mut s);
+}
+
+/// Called when the user (or auto-snooze) snoozes a break.
+/// Returns Err if max snoozes reached.
+pub async fn snooze_break(state: &SharedAppState) -> Result<(), String> {
+    let mut s = state.lock().await;
+    if s.snooze_count >= s.max_snoozes {
+        return Err("Maximum snoozes reached".into());
+    }
+    s.snooze_count += 1;
+    s.snooze_remaining = s.snooze_duration_secs;
+    s.status = MonitoringStatus::Snoozed;
+    Ok(())
 }
 
 /// Called when the user wants to pause monitoring.
@@ -71,4 +88,6 @@ pub async fn take_break_now(state: &SharedAppState) {
     let mut s = state.lock().await;
     s.seconds_remaining = 0;
     s.status = MonitoringStatus::OnBreak;
+    s.snooze_count = 0;
+    s.snooze_remaining = 0;
 }

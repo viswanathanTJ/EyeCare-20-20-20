@@ -18,8 +18,18 @@ pub fn setup_screen_monitoring(_app: &AppHandle, state: SharedAppState) {
                                 let st = state.clone();
                 tauri::async_runtime::block_on(async {
                     let mut s = st.lock().await;
-                    if s.status == MonitoringStatus::Active {
-                        s.status = MonitoringStatus::Paused;
+                    match s.status {
+                        MonitoringStatus::Active => {
+                            s.status = MonitoringStatus::Paused;
+                        }
+                        MonitoringStatus::OnBreak | MonitoringStatus::Snoozed => {
+                            // Screen locked during break/snooze — auto-skip and reset
+                            s.seconds_remaining = s.break_interval_secs;
+                            s.status = MonitoringStatus::Paused;
+                            s.snooze_count = 0;
+                            s.snooze_remaining = 0;
+                        }
+                        _ => {}
                     }
                 });
             } else if !locked && was_locked {

@@ -7,6 +7,7 @@ pub enum MonitoringStatus {
     Active,
     Paused,
     OnBreak,
+    Snoozed,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -50,6 +51,14 @@ pub struct AppState {
     pub auto_start: bool,
     /// Current system appearance: "dark" or "light"
     pub theme: String,
+    /// Snooze duration in seconds (default: 300 = 5 min)
+    pub snooze_duration_secs: u64,
+    /// Seconds remaining in current snooze countdown
+    pub snooze_remaining: u64,
+    /// Maximum number of snoozes allowed per break (default: 3)
+    pub max_snoozes: u32,
+    /// Number of snoozes used for the current break
+    pub snooze_count: u32,
 }
 
 impl Default for AppState {
@@ -69,6 +78,10 @@ impl Default for AppState {
             sound_enabled: true,
             auto_start: false,
             theme: "dark".to_string(),
+            snooze_duration_secs: 300,
+            snooze_remaining: 0,
+            max_snoozes: 3,
+            snooze_count: 0,
         }
     }
 }

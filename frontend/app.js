@@ -1,7 +1,7 @@
 (function () {
   var C = 2 * Math.PI * 100;
   var breakDur = 20, breakRem = 20, bTimer = null, paused = false, total = 1200;
-  var curInt = 20, curBrk = 20;
+  var curInt = 20, curBrk = 20, curSnzDur = 5, curSnzMax = 3;
   var themeChoice = "system";
   var defaultAccent = "#64ffda", defaultPink = "#ffd700";
   var customAccent = localStorage.getItem("accent") || "";
@@ -49,6 +49,8 @@
       breakDur = s.break_duration_secs;
       curInt = Math.round(s.break_interval_secs / 60);
       curBrk = s.break_duration_secs;
+      curSnzDur = Math.round(s.snooze_duration_secs / 60);
+      curSnzMax = s.max_snoozes;
 
       document.getElementById("timerTime").textContent = pad(Math.floor(s.seconds_remaining / 60)) + ":" + pad(s.seconds_remaining % 60);
       document.getElementById("progress").style.strokeDashoffset = C * (1 - s.seconds_remaining / total);
@@ -62,6 +64,17 @@
       } else if (s.status === "OnBreak") {
         b.textContent = "On Break"; b.className += " badge-break";
         document.getElementById("timerLabel").textContent = "break time";
+      } else if (s.status === "Snoozed") {
+        b.textContent = "Snoozed"; b.className += " badge-snoozed";
+        var snzM = Math.floor(s.snooze_remaining / 60);
+        var snzS = s.snooze_remaining % 60;
+        document.getElementById("timerLabel").textContent = "snooze " + pad(snzM) + ":" + pad(snzS);
+        // Update break overlay ring with snooze countdown
+        if (document.getElementById("breakOverlay").classList.contains("show")) {
+          document.getElementById("breakCountdown").textContent = pad(snzM) + ":" + pad(snzS);
+          document.getElementById("breakProgress").style.strokeDashoffset = C * (1 - s.snooze_remaining / s.snooze_duration_secs);
+          document.querySelector("#breakOverlay .ring-wrap .ring-center .ring-label").textContent = "snooze remaining";
+        }
       } else {
         b.textContent = "Monitoring"; b.className += " badge-active";
         document.getElementById("timerLabel").textContent = "until next break";
@@ -106,6 +119,16 @@
       document.getElementById("intValMain").textContent = curInt + " min";
       document.getElementById("brkValMain").textContent = curBrk + " sec";
 
+      // Snooze settings display
+      document.getElementById("snzDurVal").textContent = curSnzDur + " min";
+      document.getElementById("snzMaxVal").textContent = curSnzMax;
+
+      // Snooze button visibility: hide if max reached
+      if (s.snooze_count >= s.max_snoozes) {
+        document.getElementById("snoozeBtn").style.display = "none";
+        document.getElementById("snoozeWrap").style.display = "none";
+      }
+
       // Reminder mode (settings panel + dashboard chips)
       document.querySelectorAll(".mode-row").forEach(function (r) {
         r.classList.toggle("active", r.dataset.mode === s.reminder_mode);
@@ -127,6 +150,8 @@
     document.getElementById("breakOverlay").className = "overlay show";
     document.getElementById("breakControls").style.display = "flex";
     document.getElementById("startBreakBtn").style.display = "";
+    document.getElementById("snoozeBtn").style.display = "";
+    document.getElementById("snoozeWrap").style.display = "";
     document.getElementById("completeMsg").style.display = "none";
     document.getElementById("breakTitle").textContent = "Time for an Eye Break";
     document.getElementById("breakTitle").style.display = "";
@@ -223,6 +248,18 @@
 
     T.event.listen("break-due", function () {
       T.core.invoke("get_tip").then(function (t) { showBreak(t); }).catch(function () { showBreak(null); });
+      // Hide snooze button if max snoozes already reached
+      T.core.invoke("get_state").then(function (s) {
+        if (s.snooze_count >= s.max_snoozes) {
+          document.getElementById("snoozeBtn").style.display = "none";
+          document.getElementById("snoozeWrap").style.display = "none";
+        }
+      });
+    });
+
+    T.event.listen("break-snoozed", function () {
+      // Keep the break overlay visible — just stop break timer if running
+      if (bTimer) clearInterval(bTimer);
     });
 
     // Settings toggle
@@ -288,6 +325,7 @@
           T.core.invoke("play_complete_sound");
           // Show celebration
           document.getElementById("breakControls").style.display = "none";
+          document.getElementById("snoozeWrap").style.display = "none";
           document.getElementById("breakTitle").style.display = "none";
           document.getElementById("breakTip").style.display = "none";
           document.querySelector("#breakOverlay .ring-wrap").style.display = "none";
@@ -298,6 +336,16 @@
           showCelebration();
         }
       }, 1000);
+    };
+
+    document.getElementById("snoozeBtn").onclick = function () {
+      if (bTimer) clearInterval(bTimer);
+      T.core.invoke("snooze_break").then(function () {
+        // Keep overlay visible — user can still click Start Break or Skip
+        document.getElementById("breakTitle").textContent = "Snoozed";
+      }).catch(function () {
+        // Max snoozes reached — do nothing
+      });
     };
 
     document.getElementById("skipBtn").onclick = function () {
@@ -320,6 +368,25 @@
     document.getElementById("intDownMain").onclick = intDown;
     document.getElementById("brkUpMain").onclick = brkUp;
     document.getElementById("brkDownMain").onclick = brkDown;
+
+    // Snooze duration +/-
+    document.getElementById("snzDurUp").onclick = function () {
+      curSnzDur = Math.min(curInt - 1, curSnzDur + 1);
+      T.core.invoke("set_snooze_duration", { minutes: curSnzDur });
+    };
+    document.getElementById("snzDurDown").onclick = function () {
+      curSnzDur = Math.max(1, curSnzDur - 1);
+      T.core.invoke("set_snooze_duration", { minutes: curSnzDur });
+    };
+    // Max snoozes +/-
+    document.getElementById("snzMaxUp").onclick = function () {
+      curSnzMax = Math.min(10, curSnzMax + 1);
+      T.core.invoke("set_max_snoozes", { count: curSnzMax });
+    };
+    document.getElementById("snzMaxDown").onclick = function () {
+      curSnzMax = Math.max(1, curSnzMax - 1);
+      T.core.invoke("set_max_snoozes", { count: curSnzMax });
+    };
 
     // Dashboard mode chips
     document.querySelectorAll(".chip").forEach(function (c) {
@@ -396,6 +463,8 @@
     T.core.invoke("get_state").then(function (s) {
       curInt = Math.round(s.break_interval_secs / 60);
       curBrk = s.break_duration_secs;
+      curSnzDur = Math.round(s.snooze_duration_secs / 60);
+      curSnzMax = s.max_snoozes;
     });
 
     // Keyboard shortcuts

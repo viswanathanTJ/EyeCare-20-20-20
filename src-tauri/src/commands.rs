@@ -27,6 +27,41 @@ pub async fn skip_break(state: State<'_, SharedAppState>) -> Result<(), String> 
 }
 
 #[tauri::command]
+pub async fn snooze_break(state: State<'_, SharedAppState>) -> Result<(), String> {
+    break_manager::snooze_break(&state).await
+}
+
+#[tauri::command]
+pub async fn set_snooze_duration(state: State<'_, SharedAppState>, minutes: u64) -> Result<(), String> {
+    if minutes < 1 {
+        return Err("Snooze duration must be at least 1 minute".into());
+    }
+    let mut s = state.lock().await;
+    let max_minutes = s.break_interval_secs / 60;
+    if minutes >= max_minutes {
+        return Err(format!("Snooze duration must be less than interval ({} min)", max_minutes));
+    }
+    s.snooze_duration_secs = minutes * 60;
+    if let Ok(store) = StatsStore::open() {
+        let _ = store.save_setting("snooze_duration_secs", &(minutes * 60).to_string());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_max_snoozes(state: State<'_, SharedAppState>, count: u32) -> Result<(), String> {
+    if count < 1 || count > 10 {
+        return Err("Max snoozes must be between 1 and 10".into());
+    }
+    let mut s = state.lock().await;
+    s.max_snoozes = count;
+    if let Ok(store) = StatsStore::open() {
+        let _ = store.save_setting("max_snoozes", &count.to_string());
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn pause_monitoring(state: State<'_, SharedAppState>) -> Result<(), String> {
     break_manager::pause_monitoring(&state).await;
     Ok(())
@@ -74,6 +109,18 @@ pub async fn set_interval(state: State<'_, SharedAppState>, minutes: u64) -> Res
     let mut s = state.lock().await;
     s.break_interval_secs = minutes * 60;
     s.seconds_remaining = minutes * 60;
+    // Clamp snooze duration if it exceeds the new interval
+    let max_snooze = (minutes * 60).saturating_sub(60); // at least 1 min less than interval
+    if s.snooze_duration_secs > max_snooze && max_snooze >= 60 {
+        s.snooze_duration_secs = max_snooze;
+        if let Ok(store) = StatsStore::open() {
+            let _ = store.save_setting("snooze_duration_secs", &max_snooze.to_string());
+        }
+    }
+    // Also clamp live snooze countdown if currently snoozed
+    if s.snooze_remaining > max_snooze {
+        s.snooze_remaining = max_snooze;
+    }
     if let Ok(store) = StatsStore::open() {
         let _ = store.save_setting("break_interval_secs", &(minutes * 60).to_string());
     }
@@ -240,6 +287,18 @@ pub async fn load_persisted_settings(state: &SharedAppState) {
         if let Some(val) = store.load_setting("auto_start") {
             if let Ok(b) = val.parse::<bool>() {
                 s.auto_start = b;
+            }
+        }
+        if let Some(val) = store.load_setting("snooze_duration_secs") {
+            if let Ok(n) = val.parse::<u64>() {
+                if n >= 60 && n < s.break_interval_secs {
+                    s.snooze_duration_secs = n;
+                }
+            }
+        }
+        if let Some(val) = store.load_setting("max_snoozes") {
+            if let Ok(n) = val.parse::<u32>() {
+                s.max_snoozes = n;
             }
         }
 

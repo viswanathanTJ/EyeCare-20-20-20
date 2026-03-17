@@ -46,6 +46,31 @@ pub async fn run_timer(app: AppHandle, state: SharedAppState) {
             MonitoringStatus::OnBreak => {
                 // Do nothing, waiting for user to finish break
             }
+            MonitoringStatus::Snoozed => {
+                if s.snooze_remaining > 0 {
+                    s.snooze_remaining -= 1;
+                }
+
+                if s.snooze_remaining == 0 {
+                    s.status = MonitoringStatus::OnBreak;
+                    let reminder_mode = s.reminder_mode;
+                    let sound = s.sound_enabled;
+                    drop(s);
+
+                    trigger_break(&app, reminder_mode, sound);
+                    continue;
+                }
+
+                let remaining = s.snooze_remaining;
+                let show_in_menu = s.show_timer_in_menu;
+                drop(s);
+
+                if show_in_menu {
+                    let mins = remaining / 60;
+                    let secs = remaining % 60;
+                    update_tray_title(&app, &format!("💤 {:02}:{:02}", mins, secs));
+                }
+            }
         }
     }
 }

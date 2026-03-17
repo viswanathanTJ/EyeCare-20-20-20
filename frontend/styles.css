@@ -151,6 +151,12 @@ body {
   border: 1px solid rgba(255, 215, 0, 0.2);
 }
 
+.badge-snoozed {
+  background: rgba(147, 130, 255, 0.1);
+  color: #9382ff;
+  border: 1px solid rgba(147, 130, 255, 0.2);
+}
+
 .ring-wrap {
   position: relative;
   width: 240px;
@@ -266,6 +272,16 @@ body {
 
 .btn-pink:hover {
   background: rgba(255, 215, 0, 0.2);
+}
+
+.btn-snooze {
+  background: rgba(147, 130, 255, 0.1);
+  border: 1px solid #9382ff;
+  color: #9382ff;
+}
+
+.btn-snooze:hover {
+  background: rgba(147, 130, 255, 0.2);
 }
 
 /* Mode chips */
