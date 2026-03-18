@@ -411,10 +411,14 @@
     };
 
     // Interval +/- (both settings panel and main panel)
-    function intUp() { curInt = Math.min(120, curInt + 5); T.core.invoke("set_interval", { minutes: curInt }); }
-    function intDown() { curInt = Math.max(5, curInt - 5); T.core.invoke("set_interval", { minutes: curInt }); }
-    function brkUp() { curBrk = Math.min(60, curBrk + 5); T.core.invoke("set_break_duration", { seconds: curBrk }); }
-    function brkDown() { curBrk = Math.max(5, curBrk - 5); T.core.invoke("set_break_duration", { seconds: curBrk }); }
+    // Snap to next/prev multiple of step
+    function snapUp(val, step, max) { return Math.min(max, Math.floor(val / step) * step + step); }
+    function snapDown(val, step, min) { return Math.max(min, Math.ceil(val / step) * step - step); }
+
+    function intUp() { curInt = snapUp(curInt, 5, 120); T.core.invoke("set_interval", { minutes: curInt }); }
+    function intDown() { curInt = snapDown(curInt, 5, 5); T.core.invoke("set_interval", { minutes: curInt }); }
+    function brkUp() { curBrk = snapUp(curBrk, 5, 60); T.core.invoke("set_break_duration", { seconds: curBrk }); }
+    function brkDown() { curBrk = snapDown(curBrk, 5, 5); T.core.invoke("set_break_duration", { seconds: curBrk }); }
 
     document.getElementById("intUp").onclick = intUp;
     document.getElementById("intDown").onclick = intDown;
