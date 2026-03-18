@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build, sign, and repack DMG with Install.command
+# Build, sign, and repack DMG
 set -e
 
 echo "==> Ejecting any mounted Eye2020 volume..."
@@ -30,9 +30,6 @@ echo "==> Building clean DMG contents..."
 STAGING_DIR=$(mktemp -d)
 cp -R "$APP_PATH" "$STAGING_DIR/"
 ln -s /Applications "$STAGING_DIR/Applications"
-cp scripts/Install.command "$STAGING_DIR/"
-chmod +x "$STAGING_DIR/Install.command"
-
 echo "==> Creating new DMG..."
 rm -f "$DMG_PATH"
 hdiutil create -volname "$VOLUME_NAME" -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_PATH"

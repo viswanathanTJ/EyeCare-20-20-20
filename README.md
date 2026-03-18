@@ -200,6 +200,42 @@ The dashboard UI lets you adjust:
 
 ---
 
+## Keyboard Shortcuts
+
+Full keyboard navigation with arrow keys and vim-style `h`/`j`/`k`/`l`.
+
+| Shortcut | Action |
+|----------|--------|
+| `Cmd+,` | Open/close Settings |
+| `Arrow Keys` / `h j k l` | Navigate between items |
+| `Enter` / `Space` | Activate button or enter edit mode |
+| `Escape` | Close panel or exit edit mode |
+
+### Dashboard Navigation
+
+| Context | Key | Action |
+|---------|-----|--------|
+| Header icons | `Left`/`Right` (`h`/`l`) | Move between Quit, Stats, Sound, Settings |
+| Header icons | `Down` (`j`) | Jump to dashboard body |
+| Header icons | `Enter`/`Space` | Activate icon |
+| Buttons | `Up`/`Down` (`k`/`j`) | Move between items |
+| Buttons | `Enter`/`Space` | Click button |
+| Mode chips | `Enter` to edit, `Left`/`Right` to change, `Enter`/`Escape` to confirm |
+| Interval / Break | `Left`/`Right` to switch, `Enter` to edit, `Up`/`Down` to adjust, `Enter`/`Escape` to confirm |
+
+### Settings & Stats Navigation
+
+| Key | Action |
+|-----|--------|
+| `Up`/`Down` (`k`/`j`) | Move between settings rows |
+| `Left`/`Right` (`h`/`l`) | Adjust +/- values, cycle themes, toggle switches |
+| `Enter`/`Space` | Toggle switches, select modes, activate buttons |
+| `Escape` / `Backspace` | Close panel |
+
+Navigation wraps around — pressing Up at the top jumps to the bottom.
+
+---
+
 ## App Behavior
 
 1. **Starts monitoring** — 20-minute countdown begins

@@ -12,14 +12,14 @@
   <!-- HEADER -->
   <div class="header">
     <div style="display:flex;gap:8px;">
-      <button class="settings-icon" id="quitBtn" title="Quit">
+      <button class="settings-icon dash-nav" id="quitBtn" data-tooltip="Quit" data-nav="activate" tabindex="-1">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18" />
           <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
       </button>
-      <button class="settings-icon" id="statsBtn" title="Stats">
+      <button class="settings-icon dash-nav" id="statsBtn" data-tooltip="Stats" data-nav="activate" tabindex="-1">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="20" x2="18" y2="10" />
@@ -29,14 +29,14 @@
       </button>
     </div>
     <div style="display:flex;gap:8px;">
-      <button class="settings-icon active" id="soundBtn" title="Sound On">
+      <button class="settings-icon dash-nav" id="soundBtn" data-tooltip="Sound On" data-nav="activate" tabindex="-1">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
           <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
           <path id="soundWaves" d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
         </svg>
       </button>
-      <button class="settings-icon" id="settingsBtn" title="Settings">
+      <button class="settings-icon dash-nav" id="settingsBtn" data-tooltip="Settings" data-nav="activate" tabindex="-1">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3" />
@@ -68,11 +68,11 @@
     <div class="tip" id="tipBox"></div>
 
     <div class="btns">
-      <button class="btn btn-primary" id="takeBreakBtn">Take Break Now</button>
-      <button class="btn btn-sec" id="pauseBtn">Pause</button>
+      <button class="btn btn-primary dash-nav" tabindex="-1" id="takeBreakBtn" data-nav="activate">Take Break Now</button>
+      <button class="btn btn-sec dash-nav" tabindex="-1" id="pauseBtn" data-nav="activate">Pause</button>
     </div>
 
-    <div class="modes">
+    <div class="modes dash-nav" tabindex="-1" data-nav="chips">
       <span class="chip on" data-mode="WindowAndNotification">Window + Notif</span>
       <span class="chip" data-mode="NotificationOnly">Notif Only</span>
       <span class="chip" data-mode="WindowOnly">Window Only</span>
@@ -80,24 +80,24 @@
     </div>
 
     <div style="display:flex;gap:20px;align-items:center;justify-content:center;">
-      <div style="text-align:center;">
+      <div class="dash-nav" tabindex="-1" data-nav="updown" data-up="intUpMain" data-down="intDownMain" style="text-align:center;padding:6px 10px;border-radius:8px;">
         <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">
           Interval</div>
         <div style="display:flex;align-items:center;gap:6px;">
-          <button class="cfg-btn" id="intDownMain">&minus;</button>
+          <button class="cfg-btn" id="intDownMain" tabindex="-1">&minus;</button>
           <span id="intValMain" style="font-size:16px;color:var(--accent);min-width:50px;display:inline-block;">20
             min</span>
-          <button class="cfg-btn" id="intUpMain">+</button>
+          <button class="cfg-btn" id="intUpMain" tabindex="-1">+</button>
         </div>
       </div>
-      <div style="text-align:center;">
+      <div class="dash-nav" tabindex="-1" data-nav="updown" data-up="brkUpMain" data-down="brkDownMain" style="text-align:center;padding:6px 10px;border-radius:8px;">
         <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">
           Break</div>
         <div style="display:flex;align-items:center;gap:6px;">
-          <button class="cfg-btn" id="brkDownMain">&minus;</button>
+          <button class="cfg-btn" id="brkDownMain" tabindex="-1">&minus;</button>
           <span id="brkValMain" style="font-size:16px;color:var(--pink);min-width:50px;display:inline-block;">20
             sec</span>
-          <button class="cfg-btn" id="brkUpMain">+</button>
+          <button class="cfg-btn" id="brkUpMain" tabindex="-1">+</button>
         </div>
       </div>
     </div>
@@ -108,103 +108,103 @@
   <div class="settings-panel" id="settingsPanel">
     <div class="settings-header">
       <div class="settings-title">Settings</div>
-      <button class="back-btn" id="settingsBack">&larr;</button>
+      <button class="back-btn setting-nav" id="settingsBack" tabindex="-1" data-nav="activate">&larr;</button>
     </div>
     <div class="settings-body">
 
       <!-- Theme -->
       <div class="setting-section">
         <div class="section-label">Appearance</div>
-        <div class="setting-row">
+        <div class="setting-row setting-nav" tabindex="-1" data-nav="theme">
           <div>
             <div class="setting-name">Theme</div>
             <div class="setting-desc">Follow system or choose manually</div>
           </div>
           <div class="theme-options">
-            <button class="theme-btn" data-theme="system" id="themeSystem">System</button>
-            <button class="theme-btn" data-theme="dark" id="themeDark">Dark</button>
-            <button class="theme-btn" data-theme="light" id="themeLight">Light</button>
+            <button class="theme-btn" data-theme="system" id="themeSystem" tabindex="-1">System</button>
+            <button class="theme-btn" data-theme="dark" id="themeDark" tabindex="-1">Dark</button>
+            <button class="theme-btn" data-theme="light" id="themeLight" tabindex="-1">Light</button>
           </div>
         </div>
-        <div class="setting-row">
+        <div class="setting-row setting-nav" tabindex="-1" data-nav="activate">
           <div>
             <div class="setting-name">Accent Color</div>
             <div class="setting-desc">Main highlight color</div>
           </div>
-          <input type="color" id="accentPicker" value="#64ffda"
+          <input type="color" id="accentPicker" value="#64ffda" tabindex="-1"
             style="width:36px;height:28px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;padding:0;">
         </div>
-        <div class="setting-row">
+        <div class="setting-row setting-nav" tabindex="-1" data-nav="activate">
           <div>
             <div class="setting-name">Break Color</div>
             <div class="setting-desc">Break timer accent</div>
           </div>
-          <input type="color" id="pinkPicker" value="#ffd700"
+          <input type="color" id="pinkPicker" value="#ffd700" tabindex="-1"
             style="width:36px;height:28px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;padding:0;">
         </div>
-        <div class="setting-row">
+        <div class="setting-row setting-nav" tabindex="-1" data-nav="activate">
           <div></div>
-          <button class="btn btn-sec" id="resetColorsBtn" style="font-size:11px;padding:5px 14px;">Reset Colors</button>
+          <button class="btn btn-sec" id="resetColorsBtn" tabindex="-1" style="font-size:11px;padding:5px 14px;">Reset Colors</button>
         </div>
       </div>
 
       <!-- Timer config -->
       <div class="setting-section">
         <div class="section-label">Timer</div>
-        <div class="setting-row">
+        <div class="setting-row setting-nav" tabindex="-1" data-nav="leftright" data-left="intDown" data-right="intUp">
           <div>
             <div class="setting-name">Work Interval</div>
             <div class="setting-desc">Time between breaks</div>
           </div>
           <div class="setting-control">
-            <button class="cfg-btn" id="intDown">&minus;</button>
+            <button class="cfg-btn" id="intDown" tabindex="-1">&minus;</button>
             <span class="cfg-val accent" id="intVal">20 min</span>
-            <button class="cfg-btn" id="intUp">+</button>
+            <button class="cfg-btn" id="intUp" tabindex="-1">+</button>
           </div>
         </div>
-        <div class="setting-row">
+        <div class="setting-row setting-nav" tabindex="-1" data-nav="leftright" data-left="brkDown" data-right="brkUp">
           <div>
             <div class="setting-name">Break Duration</div>
             <div class="setting-desc">How long each break lasts</div>
           </div>
           <div class="setting-control">
-            <button class="cfg-btn" id="brkDown">&minus;</button>
+            <button class="cfg-btn" id="brkDown" tabindex="-1">&minus;</button>
             <span class="cfg-val pink" id="brkVal">20 sec</span>
-            <button class="cfg-btn" id="brkUp">+</button>
+            <button class="cfg-btn" id="brkUp" tabindex="-1">+</button>
           </div>
         </div>
-        <div class="setting-row">
+        <div class="setting-row setting-nav" tabindex="-1" data-nav="toggle" data-toggle="timerMenuToggle">
           <div>
             <div class="setting-name">Show Timer in Menu Bar</div>
             <div class="setting-desc">Display countdown in tray</div>
           </div>
-          <button class="toggle" id="timerMenuToggle"></button>
+          <button class="toggle" id="timerMenuToggle" tabindex="-1"></button>
         </div>
       </div>
 
       <!-- Snooze config -->
       <div class="setting-section">
         <div class="section-label">Snooze</div>
-        <div class="setting-row">
+        <div class="setting-row setting-nav" tabindex="-1" data-nav="leftright" data-left="snzDurDown" data-right="snzDurUp">
           <div>
             <div class="setting-name">Snooze Duration</div>
             <div class="setting-desc">Delay before re-reminding</div>
           </div>
           <div class="setting-control">
-            <button class="cfg-btn" id="snzDurDown">&minus;</button>
+            <button class="cfg-btn" id="snzDurDown" tabindex="-1">&minus;</button>
             <span class="cfg-val accent" id="snzDurVal">5 min</span>
-            <button class="cfg-btn" id="snzDurUp">+</button>
+            <button class="cfg-btn" id="snzDurUp" tabindex="-1">+</button>
           </div>
         </div>
-        <div class="setting-row">
+        <div class="setting-row setting-nav" tabindex="-1" data-nav="leftright" data-left="snzMaxDown" data-right="snzMaxUp">
           <div>
             <div class="setting-name">Max Snoozes</div>
             <div class="setting-desc">Snoozes allowed per break</div>
           </div>
           <div class="setting-control">
-            <button class="cfg-btn" id="snzMaxDown">&minus;</button>
+            <button class="cfg-btn" id="snzMaxDown" tabindex="-1">&minus;</button>
             <span class="cfg-val accent" id="snzMaxVal">3</span>
-            <button class="cfg-btn" id="snzMaxUp">+</button>
+            <button class="cfg-btn" id="snzMaxUp" tabindex="-1">+</button>
           </div>
         </div>
       </div>
@@ -213,19 +213,19 @@
       <div class="setting-section">
         <div class="section-label">Reminder Mode</div>
         <div class="mode-options">
-          <div class="mode-row active" data-mode="WindowAndNotification">
+          <div class="mode-row setting-nav active" tabindex="-1" data-mode="WindowAndNotification" data-nav="select">
             <div class="mode-dot"></div>
             <div class="mode-name">Window + Notification</div>
           </div>
-          <div class="mode-row" data-mode="NotificationOnly">
+          <div class="mode-row setting-nav" tabindex="-1" data-mode="NotificationOnly" data-nav="select">
             <div class="mode-dot"></div>
             <div class="mode-name">Notification Only</div>
           </div>
-          <div class="mode-row" data-mode="WindowOnly">
+          <div class="mode-row setting-nav" tabindex="-1" data-mode="WindowOnly" data-nav="select">
             <div class="mode-dot"></div>
             <div class="mode-name">Window Only</div>
           </div>
-          <div class="mode-row" data-mode="Silent">
+          <div class="mode-row setting-nav" tabindex="-1" data-mode="Silent" data-nav="select">
             <div class="mode-dot"></div>
             <div class="mode-name">Silent</div>
           </div>
@@ -235,19 +235,19 @@
       <!-- General -->
       <div class="setting-section">
         <div class="section-label">General</div>
-        <div class="setting-row">
+        <div class="setting-row setting-nav" tabindex="-1" data-nav="toggle" data-toggle="soundToggle">
           <div>
             <div class="setting-name">Break Sound</div>
             <div class="setting-desc">Play sound when break is due</div>
           </div>
-          <button class="toggle on" id="soundToggle"></button>
+          <button class="toggle on" id="soundToggle" tabindex="-1"></button>
         </div>
-        <div class="setting-row">
+        <div class="setting-row setting-nav" tabindex="-1" data-nav="toggle" data-toggle="autoStartToggle">
           <div>
             <div class="setting-name">Start on Login</div>
             <div class="setting-desc">Auto-launch when you log in</div>
           </div>
-          <button class="toggle" id="autoStartToggle"></button>
+          <button class="toggle" id="autoStartToggle" tabindex="-1"></button>
         </div>
       </div>
 
@@ -271,7 +271,7 @@
   <div class="stats-panel" id="statsPanel">
     <div class="settings-header">
       <div class="settings-title">Statistics</div>
-      <button class="back-btn" id="statsBack">&larr;</button>
+      <button class="back-btn stat-nav" id="statsBack" tabindex="-1" data-nav="activate">&larr;</button>
     </div>
     <div class="settings-body">
       <div class="stats-grid">
@@ -296,14 +296,14 @@
           <div class="stats-card-label">All-Time Breaks Completed</div>
         </div>
       </div>
-      <div style="text-align:center;margin-bottom:16px;">
-        <button class="btn btn-sec" id="resetStatsBtn"
+      <div class="stat-nav" tabindex="-1" data-nav="activate" style="text-align:center;margin-bottom:16px;">
+        <button class="btn btn-sec" id="resetStatsBtn" tabindex="-1"
           style="font-size:12px;padding:8px 18px;color:var(--pink);border-color:var(--pink);">Reset Statistics</button>
         <div id="resetConfirm" style="display:none;margin-top:10px;">
           <div style="font-size:12px;color:var(--pink);margin-bottom:8px;">Are you sure? This cannot be undone.</div>
-          <button class="btn btn-pink" id="resetYes" style="font-size:12px;padding:6px 16px;margin-right:8px;">Yes,
+          <button class="btn btn-pink stat-nav" tabindex="-1" data-nav="activate" id="resetYes" style="font-size:12px;padding:6px 16px;margin-right:8px;">Yes,
             Reset</button>
-          <button class="btn btn-sec" id="resetNo" style="font-size:12px;padding:6px 16px;">Cancel</button>
+          <button class="btn btn-sec stat-nav" tabindex="-1" data-nav="activate" id="resetNo" style="font-size:12px;padding:6px 16px;">Cancel</button>
         </div>
       </div>
       <div style="font-size:12px;color:var(--muted);text-align:center;line-height:1.6;">

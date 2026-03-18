@@ -197,11 +197,11 @@
       // Header sound icon
       if (s.sound_enabled) {
         $.soundBtn.classList.add("active");
-        $.soundBtn.title = "Sound On";
+        $.soundBtn.dataset.tooltip = "Sound On";
         $.soundWaves.style.display = "";
       } else {
         $.soundBtn.classList.remove("active");
-        $.soundBtn.title = "Sound Off";
+        $.soundBtn.dataset.tooltip = "Sound Off";
         $.soundWaves.style.display = "none";
       }
 
@@ -220,13 +220,15 @@
         $.snoozeWrap.style.display = "none";
       }
 
-      // Reminder mode (settings panel + dashboard chips)
-      $.modeRows.forEach(function (r) {
-        r.classList.toggle("active", r.dataset.mode === s.reminder_mode);
-      });
-      $.chips.forEach(function (c) {
-        c.className = c.dataset.mode === s.reminder_mode ? "chip on" : "chip";
-      });
+      // Reminder mode (settings panel + dashboard chips) — skip if user just changed
+      if (!isSettingsDirty()) {
+        $.modeRows.forEach(function (r) {
+          r.classList.toggle("active", r.dataset.mode === s.reminder_mode);
+        });
+        $.chips.forEach(function (c) {
+          c.className = c.dataset.mode === s.reminder_mode ? "chip on" : "chip";
+        });
+      }
 
       // Theme
       applyTheme(themeChoice, s.theme);
@@ -376,6 +378,10 @@
         panel.classList.remove("show"); btn.classList.remove("active");
       } else {
         panel.classList.add("show"); btn.classList.add("active");
+        setTimeout(function () {
+          var first = panel.querySelector(".stat-nav");
+          if (first) first.focus();
+        }, 50);
       }
     };
     document.getElementById("statsBack").onclick = function () {
@@ -539,9 +545,17 @@
       format: function (v) { return String(v); }
     });
 
-    // Dashboard mode chips
+    // Dashboard mode chips — update UI instantly, debounce backend
     document.querySelectorAll(".chip").forEach(function (c) {
-      c.onclick = function () { T.core.invoke("set_reminder_mode", { mode: c.dataset.mode }); };
+      c.onclick = function () {
+        markDirty();
+        document.querySelectorAll(".chip").forEach(function (ch) {
+          ch.className = ch === c ? "chip on" : "chip";
+        });
+        debounce("mode", function () {
+          T.core.invoke("set_reminder_mode", { mode: c.dataset.mode }).catch(function (e) { console.error("set_reminder_mode:", e); });
+        }, 200);
+      };
     });
 
     // Settings: Timer in menu bar toggle
@@ -549,9 +563,17 @@
       T.core.invoke("toggle_timer_in_menu").catch(function (e) { console.error("toggle_timer_in_menu:", e); });
     };
 
-    // Settings: Reminder modes
+    // Settings: Reminder modes — update UI instantly, debounce backend
     document.querySelectorAll(".mode-row").forEach(function (r) {
-      r.onclick = function () { T.core.invoke("set_reminder_mode", { mode: r.dataset.mode }).catch(function (e) { console.error("set_reminder_mode:", e); }); };
+      r.onclick = function () {
+        markDirty();
+        document.querySelectorAll(".mode-row").forEach(function (mr) {
+          mr.classList.toggle("active", mr === r);
+        });
+        debounce("mode", function () {
+          T.core.invoke("set_reminder_mode", { mode: r.dataset.mode }).catch(function (e) { console.error("set_reminder_mode:", e); });
+        }, 200);
+      };
     });
 
     // Settings: Auto-start toggle
@@ -618,8 +640,365 @@
       curSnzMax = s.max_snoozes;
     });
 
+    // Shared keyboard navigation for any panel
+    function getNavItems(selector) {
+      return Array.from(document.querySelectorAll(selector));
+    }
+
+    function focusNav(selector, index) {
+      var items = getNavItems(selector);
+      if (items.length === 0) return;
+      if (index < 0) index = 0;
+      if (index >= items.length) index = items.length - 1;
+      items[index].focus();
+      items[index].scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+
+    function navIndex(selector) {
+      var items = getNavItems(selector);
+      for (var i = 0; i < items.length; i++) {
+        if (items[i] === document.activeElement) return i;
+      }
+      return -1;
+    }
+
+    function handleRowAction(row, e) {
+      var nav = row.dataset.nav;
+
+      // Left/Right for +/- rows (settings panel)
+      if (nav === "leftright") {
+        if (e.key === "ArrowLeft" || e.key === "h") {
+          e.preventDefault();
+          var lb = document.getElementById(row.dataset.left);
+          if (lb) lb.click();
+          return true;
+        }
+        if (e.key === "ArrowRight" || e.key === "l") {
+          e.preventDefault();
+          var rb = document.getElementById(row.dataset.right);
+          if (rb) rb.click();
+          return true;
+        }
+      }
+
+      // Up/Down for +/- rows (dashboard — Interval/Break side by side)
+      // Enter to start editing, Up/Down to adjust, Escape/Enter to stop
+      if (nav === "updown") {
+        if (!row.dataset.editing) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            row.dataset.editing = "1";
+            row.style.boxShadow = "inset 0 0 0 2px var(--accent)";
+            return true;
+          }
+        } else {
+          if (e.key === "ArrowUp") {
+            e.preventDefault();
+            var ub = document.getElementById(row.dataset.up);
+            if (ub) ub.click();
+            return true;
+          }
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            var db = document.getElementById(row.dataset.down);
+            if (db) db.click();
+            return true;
+          }
+          if (e.key === "Escape" || e.key === "Enter") {
+            e.preventDefault();
+            delete row.dataset.editing;
+            row.style.boxShadow = "";
+            return true;
+          }
+        }
+      }
+
+      // Left/Right or Enter/Space for toggles
+      if (nav === "toggle") {
+        if (e.key === "ArrowLeft" || e.key === "h" || e.key === "ArrowRight" || e.key === "l" || e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          var tog = document.getElementById(row.dataset.toggle);
+          if (tog) tog.click();
+          return true;
+        }
+      }
+
+      // Theme row: Left/Right cycles through theme buttons
+      if (nav === "theme") {
+        if (e.key === "ArrowLeft" || e.key === "h" || e.key === "ArrowRight" || e.key === "l") {
+          e.preventDefault();
+          var btns = Array.from(row.querySelectorAll(".theme-btn"));
+          var cur = -1;
+          btns.forEach(function (b, i) { if (b.classList.contains("active")) cur = i; });
+          if (e.key === "ArrowRight" || e.key === "l") cur = Math.min(btns.length - 1, cur + 1);
+          else cur = Math.max(0, cur - 1);
+          btns[cur].click();
+          return true;
+        }
+      }
+
+      // Chips row: Enter to start editing, Left/Right to change, Enter/Escape to stop
+      if (nav === "chips") {
+        if (!row.dataset.editing) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            row.dataset.editing = "1";
+            row.style.boxShadow = "inset 0 0 0 2px var(--accent)";
+            return true;
+          }
+        } else {
+          if (e.key === "ArrowLeft" || e.key === "h" || e.key === "ArrowRight" || e.key === "l") {
+            e.preventDefault();
+            var chips = Array.from(row.querySelectorAll(".chip"));
+            var ci = -1;
+            chips.forEach(function (c, i) { if (c.classList.contains("on")) ci = i; });
+            if (e.key === "ArrowRight" || e.key === "l") ci = Math.min(chips.length - 1, ci + 1);
+            else ci = Math.max(0, ci - 1);
+            chips[ci].click();
+            return true;
+          }
+          if (e.key === "Escape" || e.key === "Enter") {
+            e.preventDefault();
+            delete row.dataset.editing;
+            row.style.boxShadow = "";
+            return true;
+          }
+        }
+      }
+
+
+      // Select rows (mode rows): Enter/Space to select
+      if (nav === "select") {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          row.click();
+          return true;
+        }
+      }
+
+      // Activate rows (color pickers, buttons): Enter/Space to activate the control
+      if (nav === "activate") {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          var ctrl = row.tagName === "BUTTON" ? row : row.querySelector("input, button");
+          if (ctrl) ctrl.click();
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    function handlePanelNav(selector, e) {
+      var idx = navIndex(selector);
+      var items = getNavItems(selector);
+      var row = idx >= 0 ? items[idx] : null;
+
+      if (e.key === "ArrowDown" || e.key === "j") {
+        e.preventDefault();
+        focusNav(selector, idx + 1);
+        return true;
+      }
+      if (e.key === "ArrowUp" || e.key === "k") {
+        e.preventDefault();
+        if (idx <= 0) return true;
+        focusNav(selector, idx - 1);
+        return true;
+      }
+
+      if (row) return handleRowAction(row, e);
+      return false;
+    }
+
+    function handleSettingsNav(e) {
+      var panel = document.getElementById("settingsPanel");
+      if (!panel.classList.contains("show")) return false;
+      return handlePanelNav("#settingsPanel .setting-nav", e);
+    }
+
+    function handleDashboardNav(e) {
+      // Only when dashboard is visible (no panels open, no break overlay)
+      if (document.getElementById("settingsPanel").classList.contains("show")) return false;
+      if (document.getElementById("statsPanel").classList.contains("show")) return false;
+      if (document.getElementById("breakOverlay").classList.contains("show")) return false;
+
+      var headerSel = ".header .dash-nav";
+      var bodySel = "#dashboard .dash-nav";
+      var headerItems = getNavItems(headerSel);
+      var bodyItems = getNavItems(bodySel);
+      var hIdx = navIndex(headerSel);
+      var bIdx = navIndex(bodySel);
+
+      // Currently on a header icon
+      if (hIdx >= 0) {
+        if (e.key === "ArrowLeft" || e.key === "h") {
+          e.preventDefault();
+          focusNav(headerSel, hIdx > 0 ? hIdx - 1 : headerItems.length - 1);
+          return true;
+        }
+        if (e.key === "ArrowRight" || e.key === "l") {
+          e.preventDefault();
+          focusNav(headerSel, hIdx < headerItems.length - 1 ? hIdx + 1 : 0);
+          return true;
+        }
+        if (e.key === "ArrowDown" || e.key === "j") {
+          e.preventDefault();
+          focusNav(bodySel, 0);
+          return true;
+        }
+        if (e.key === "ArrowUp" || e.key === "k") {
+          e.preventDefault();
+          // Wrap: go to last body item
+          focusNav(bodySel, bodyItems.length - 1);
+          return true;
+        }
+        // Enter/Space to activate
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          headerItems[hIdx].click();
+          return true;
+        }
+        return false;
+      }
+
+      // Currently on a body item
+      if (bIdx >= 0) {
+        var row = bodyItems[bIdx];
+        var rowNav = row ? row.dataset.nav : "";
+
+        // For updown items in edit mode, let handleRowAction consume Up/Down
+        if (row && rowNav === "updown" && row.dataset.editing) {
+          if (handleRowAction(row, e)) return true;
+        }
+        // For updown items not editing, Enter activates edit mode
+        if (row && rowNav === "updown" && !row.dataset.editing) {
+          if (e.key === "Enter" || e.key === " ") {
+            return handleRowAction(row, e);
+          }
+          // Left/Right moves between sibling updown items
+          if (e.key === "ArrowLeft" || e.key === "h") {
+            e.preventDefault();
+            if (bIdx > 0) focusNav(bodySel, bIdx - 1);
+            return true;
+          }
+          if (e.key === "ArrowRight" || e.key === "l") {
+            e.preventDefault();
+            if (bIdx < bodyItems.length - 1) focusNav(bodySel, bIdx + 1);
+            return true;
+          }
+          // Fall through to normal Up/Down nav below
+        }
+
+        // Normal vertical nav for other items
+        if (e.key === "ArrowUp" || e.key === "k") {
+          e.preventDefault();
+          if (bIdx === 0) {
+            focusNav(headerSel, 0);
+          } else {
+            focusNav(bodySel, bIdx - 1);
+          }
+          return true;
+        }
+        if (e.key === "ArrowDown" || e.key === "j") {
+          e.preventDefault();
+          if (bIdx >= bodyItems.length - 1) {
+            // Wrap: go to header
+            focusNav(headerSel, 0);
+          } else {
+            focusNav(bodySel, bIdx + 1);
+          }
+          return true;
+        }
+        if (row) return handleRowAction(row, e);
+        return false;
+      }
+
+      // Nothing focused — any arrow key starts navigation
+      if (e.key === "ArrowDown" || e.key === "ArrowRight" || e.key === "l" || e.key === "j") {
+        e.preventDefault();
+        focusNav(headerSel, 0);
+        return true;
+      }
+      if (e.key === "ArrowUp" || e.key === "ArrowLeft" || e.key === "h" || e.key === "k") {
+        e.preventDefault();
+        focusNav(headerSel, headerItems.length - 1);
+        return true;
+      }
+      return false;
+    }
+
+    function handleStatsNav(e) {
+      var panel = document.getElementById("statsPanel");
+      if (!panel.classList.contains("show")) return false;
+      // Use only visible stat-nav items (confirm buttons hidden until Reset clicked)
+      var selector = "#statsPanel .stat-nav";
+      var items = getNavItems(selector);
+      var visible = items.filter(function (el) {
+        return el.offsetParent !== null;
+      });
+      if (visible.length === 0) return false;
+
+      var idx = -1;
+      visible.forEach(function (el, i) { if (el === document.activeElement) idx = i; });
+
+      if (e.key === "ArrowDown" || e.key === "j") {
+        e.preventDefault();
+        idx = Math.min(visible.length - 1, idx + 1);
+        visible[idx].focus();
+        visible[idx].scrollIntoView({ block: "nearest", behavior: "smooth" });
+        return true;
+      }
+      if (e.key === "ArrowUp" || e.key === "k") {
+        e.preventDefault();
+        if (idx <= 0) return true;
+        idx = idx - 1;
+        visible[idx].focus();
+        visible[idx].scrollIntoView({ block: "nearest", behavior: "smooth" });
+        return true;
+      }
+      // Left/Right to switch between Yes/No when confirm is shown
+      if (e.key === "ArrowLeft" || e.key === "h" || e.key === "ArrowRight" || e.key === "l") {
+        var confirm = document.getElementById("resetConfirm");
+        if (confirm && confirm.style.display !== "none") {
+          e.preventDefault();
+          var yesBtn = document.getElementById("resetYes");
+          var noBtn = document.getElementById("resetNo");
+          if (document.activeElement === yesBtn || document.activeElement.parentElement === yesBtn) {
+            noBtn.focus();
+          } else {
+            yesBtn.focus();
+          }
+          return true;
+        }
+      }
+      if (idx >= 0 && visible[idx]) return handleRowAction(visible[idx], e);
+      return false;
+    }
+
+
+
     // Keyboard shortcuts
     document.addEventListener("keydown", function (e) {
+      // Cmd+, — toggle settings
+      if ((e.metaKey || e.ctrlKey) && e.key === ",") {
+        e.preventDefault();
+        toggleSettings();
+        // Focus first nav item when opening
+        if (document.getElementById("settingsPanel").classList.contains("show")) {
+          setTimeout(function () { focusNav("#settingsPanel .setting-nav", 0); }, 50);
+        }
+        return;
+      }
+
+      // Settings panel navigation
+      if (handleSettingsNav(e)) return;
+
+      // Stats panel navigation
+      if (handleStatsNav(e)) return;
+
+      // Dashboard navigation
+      if (handleDashboardNav(e)) return;
+
       // Escape — close settings or stats panel
       if (e.key === "Escape" || (e.key === "Backspace" && e.target.tagName !== "INPUT")) {
         var settings = document.getElementById("settingsPanel");

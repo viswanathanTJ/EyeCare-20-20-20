@@ -91,6 +91,53 @@ body {
   color: var(--accent);
 }
 
+/* Custom tooltips */
+/* Keyboard nav focus for settings, dashboard, and stats */
+.setting-nav:focus,
+.dash-nav:focus,
+.stat-nav:focus {
+  outline: none;
+  background: rgba(100, 255, 218, 0.08);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.light .setting-nav:focus,
+.light .dash-nav:focus,
+.light .stat-nav:focus {
+  background: rgba(100, 255, 218, 0.15);
+}
+
+
+.settings-icon[data-tooltip] {
+  position: relative;
+}
+
+.settings-icon[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 100;
+}
+
+.settings-icon[data-tooltip]:hover::after {
+  opacity: 1;
+}
+
 .settings-icon.active {
   border-color: var(--accent);
   color: var(--accent);
