@@ -75,7 +75,7 @@
   }
 
   function markDirty() { settingsDirty = Date.now(); }
-  function isSettingsDirty() { return Date.now() - settingsDirty < 1500; }
+  function isSettingsDirty() { return Date.now() - settingsDirty < 800; }
 
   // Debounce: delays fn until wait ms after last call
   var _debounceTimers = {};
@@ -118,39 +118,58 @@
     });
   }
 
+  // Cached DOM refs (populated on first pollState call)
+  var $ = {};
+  function cacheDOM() {
+    if ($.timerTime) return;
+    var ids = [
+      "timerTime", "progress", "statusBadge", "timerLabel", "pauseBtn",
+      "breakOverlay", "breakCountdown", "breakProgress",
+      "intVal", "intValMain", "brkVal", "brkValMain",
+      "snzDurVal", "snzMaxVal", "snoozeBtn", "snoozeWrap",
+      "spCompleted", "spSkipped", "spStreak", "spBest", "spTotal",
+      "autoStartToggle", "timerMenuToggle", "soundToggle",
+      "soundBtn", "soundWaves"
+    ];
+    ids.forEach(function (id) { $[id] = document.getElementById(id); });
+    $.snoozeRingLabel = document.querySelector("#breakOverlay .ring-wrap .ring-center .ring-label");
+    $.modeRows = document.querySelectorAll(".mode-row");
+    $.chips = document.querySelectorAll(".chip");
+  }
+
   function pollState() {
     if (!window.__TAURI__) return;
+    cacheDOM();
     window.__TAURI__.core.invoke("get_state").then(function (s) {
       total = s.break_interval_secs;
       breakDur = s.break_duration_secs;
 
-      document.getElementById("timerTime").textContent = pad(Math.floor(s.seconds_remaining / 60)) + ":" + pad(s.seconds_remaining % 60);
-      document.getElementById("progress").style.strokeDashoffset = C * (1 - s.seconds_remaining / total);
+      $.timerTime.textContent = pad(Math.floor(s.seconds_remaining / 60)) + ":" + pad(s.seconds_remaining % 60);
+      $.progress.style.strokeDashoffset = C * (1 - s.seconds_remaining / total);
 
-      var b = document.getElementById("statusBadge");
-      b.className = "badge";
+      $.statusBadge.className = "badge";
       if (s.status === "Paused") {
-        b.textContent = "Paused"; b.className += " badge-paused";
-        document.getElementById("timerLabel").textContent = "paused";
-        document.getElementById("pauseBtn").textContent = "Resume"; paused = true;
+        $.statusBadge.textContent = "Paused"; $.statusBadge.className += " badge-paused";
+        $.timerLabel.textContent = "paused";
+        $.pauseBtn.textContent = "Resume"; paused = true;
       } else if (s.status === "OnBreak") {
-        b.textContent = "On Break"; b.className += " badge-break";
-        document.getElementById("timerLabel").textContent = "break time";
+        $.statusBadge.textContent = "On Break"; $.statusBadge.className += " badge-break";
+        $.timerLabel.textContent = "break time";
       } else if (s.status === "Snoozed") {
-        b.textContent = "Snoozed"; b.className += " badge-snoozed";
+        $.statusBadge.textContent = "Snoozed"; $.statusBadge.className += " badge-snoozed";
         var snzM = Math.floor(s.snooze_remaining / 60);
         var snzS = s.snooze_remaining % 60;
-        document.getElementById("timerLabel").textContent = "snooze " + pad(snzM) + ":" + pad(snzS);
+        $.timerLabel.textContent = "snooze " + pad(snzM) + ":" + pad(snzS);
         // Update break overlay ring with snooze countdown
-        if (document.getElementById("breakOverlay").classList.contains("show")) {
-          document.getElementById("breakCountdown").textContent = pad(snzM) + ":" + pad(snzS);
-          document.getElementById("breakProgress").style.strokeDashoffset = C * (1 - s.snooze_remaining / s.snooze_duration_secs);
-          document.querySelector("#breakOverlay .ring-wrap .ring-center .ring-label").textContent = "snooze remaining";
+        if ($.breakOverlay.classList.contains("show")) {
+          $.breakCountdown.textContent = pad(snzM) + ":" + pad(snzS);
+          $.breakProgress.style.strokeDashoffset = C * (1 - s.snooze_remaining / s.snooze_duration_secs);
+          if ($.snoozeRingLabel) $.snoozeRingLabel.textContent = "snooze remaining";
         }
       } else {
-        b.textContent = "Monitoring"; b.className += " badge-active";
-        document.getElementById("timerLabel").textContent = "until next break";
-        document.getElementById("pauseBtn").textContent = "Pause"; paused = false;
+        $.statusBadge.textContent = "Monitoring"; $.statusBadge.className += " badge-active";
+        $.timerLabel.textContent = "until next break";
+        $.pauseBtn.textContent = "Pause"; paused = false;
       }
 
       // Update settings panel values (skip if user is editing or just changed)
@@ -160,84 +179,75 @@
         curSnzDur = Math.round(s.snooze_duration_secs / 60);
         curSnzMax = s.max_snoozes;
       }
-      if (!isEditing(document.getElementById("intVal")))
-        document.getElementById("intVal").textContent = curInt + " min";
-      if (!isEditing(document.getElementById("brkVal")))
-        document.getElementById("brkVal").textContent = curBrk + " sec";
+      if (!isEditing($.intVal)) $.intVal.textContent = curInt + " min";
+      if (!isEditing($.brkVal)) $.brkVal.textContent = curBrk + " sec";
 
       // Stats panel
-      document.getElementById("spCompleted").textContent = s.today_completed || 0;
-      document.getElementById("spSkipped").textContent = s.today_skipped || 0;
-      document.getElementById("spStreak").textContent = s.current_streak || 0;
-      document.getElementById("spBest").textContent = s.longest_streak || 0;
-      document.getElementById("spTotal").textContent = s.total_breaks || 0;
+      $.spCompleted.textContent = s.today_completed || 0;
+      $.spSkipped.textContent = s.today_skipped || 0;
+      $.spStreak.textContent = s.current_streak || 0;
+      $.spBest.textContent = s.longest_streak || 0;
+      $.spTotal.textContent = s.total_breaks || 0;
 
       // Toggles
-      var autoTog = document.getElementById("autoStartToggle");
-      autoTog.className = s.auto_start ? "toggle on" : "toggle";
-
-      var timerTog = document.getElementById("timerMenuToggle");
-      timerTog.className = s.show_timer_in_menu ? "toggle on" : "toggle";
-
-      var soundTog = document.getElementById("soundToggle");
-      soundTog.className = s.sound_enabled ? "toggle on" : "toggle";
+      $.autoStartToggle.className = s.auto_start ? "toggle on" : "toggle";
+      $.timerMenuToggle.className = s.show_timer_in_menu ? "toggle on" : "toggle";
+      $.soundToggle.className = s.sound_enabled ? "toggle on" : "toggle";
 
       // Header sound icon
-      var soundBtn = document.getElementById("soundBtn");
-      var soundWaves = document.getElementById("soundWaves");
       if (s.sound_enabled) {
-        soundBtn.classList.add("active");
-        soundBtn.title = "Sound On";
-        soundWaves.style.display = "";
+        $.soundBtn.classList.add("active");
+        $.soundBtn.title = "Sound On";
+        $.soundWaves.style.display = "";
       } else {
-        soundBtn.classList.remove("active");
-        soundBtn.title = "Sound Off";
-        soundWaves.style.display = "none";
+        $.soundBtn.classList.remove("active");
+        $.soundBtn.title = "Sound Off";
+        $.soundWaves.style.display = "none";
       }
 
       // Main panel config display (skip if editing)
-      if (!isEditing(document.getElementById("intValMain")))
-        document.getElementById("intValMain").textContent = curInt + " min";
-      if (!isEditing(document.getElementById("brkValMain")))
-        document.getElementById("brkValMain").textContent = curBrk + " sec";
+      if (!isEditing($.intValMain)) $.intValMain.textContent = curInt + " min";
+      if (!isEditing($.brkValMain)) $.brkValMain.textContent = curBrk + " sec";
 
       // Snooze settings display (skip if editing)
-      if (!isEditing(document.getElementById("snzDurVal")))
-        document.getElementById("snzDurVal").textContent = curSnzDur + " min";
-      if (!isEditing(document.getElementById("snzMaxVal")))
-        document.getElementById("snzMaxVal").textContent = curSnzMax;
+      if (!isEditing($.snzDurVal)) $.snzDurVal.textContent = curSnzDur + " min";
+      if (!isEditing($.snzMaxVal)) $.snzMaxVal.textContent = curSnzMax;
 
       // Snooze button label + visibility
-      document.getElementById("snoozeBtn").textContent = "Snooze " + curSnzDur + "m";
+      $.snoozeBtn.textContent = "Snooze " + curSnzDur + "m";
       if (s.snooze_count >= s.max_snoozes) {
-        document.getElementById("snoozeBtn").style.display = "none";
-        document.getElementById("snoozeWrap").style.display = "none";
+        $.snoozeBtn.style.display = "none";
+        $.snoozeWrap.style.display = "none";
       }
 
       // Reminder mode (settings panel + dashboard chips)
-      document.querySelectorAll(".mode-row").forEach(function (r) {
+      $.modeRows.forEach(function (r) {
         r.classList.toggle("active", r.dataset.mode === s.reminder_mode);
       });
-      document.querySelectorAll(".chip").forEach(function (c) {
+      $.chips.forEach(function (c) {
         c.className = c.dataset.mode === s.reminder_mode ? "chip on" : "chip";
       });
 
       // Theme
       applyTheme(themeChoice, s.theme);
-      applyCustomColors();
     });
   }
 
-  function showBreak(tip) {
+  function showBreak(tip, snoozeExhausted) {
     document.getElementById("breakTip").textContent = '"' + (tip || "Look 20 feet away.") + '"';
     breakRem = breakDur;
     updBreak();
     document.getElementById("breakOverlay").className = "overlay show";
     document.getElementById("breakControls").style.display = "flex";
     document.getElementById("startBreakBtn").style.display = "";
-    document.getElementById("snoozeBtn").style.display = "";
     document.getElementById("snoozeBtn").textContent = "Snooze " + curSnzDur + "m";
-    document.getElementById("snoozeWrap").style.display = "";
+    if (snoozeExhausted) {
+      document.getElementById("snoozeBtn").style.display = "none";
+      document.getElementById("snoozeWrap").style.display = "none";
+    } else {
+      document.getElementById("snoozeBtn").style.display = "";
+      document.getElementById("snoozeWrap").style.display = "";
+    }
     document.getElementById("completeMsg").style.display = "none";
     document.getElementById("breakTitle").textContent = "Time for an Eye Break";
     document.getElementById("breakTitle").style.display = "";
@@ -246,17 +256,20 @@
   }
 
   function updBreak() {
-    document.getElementById("breakCountdown").textContent = breakRem;
+    var m = Math.floor(breakRem / 60), s = breakRem % 60;
+    document.getElementById("breakCountdown").textContent = m > 0 ? pad(m) + ":" + pad(s) : breakRem;
     document.getElementById("breakProgress").style.strokeDashoffset = C * (1 - breakRem / breakDur);
   }
 
   function hideBreak() {
     document.getElementById("breakOverlay").className = "overlay";
-    if (celebrateTimer) { clearInterval(celebrateTimer); celebrateTimer = null; }
+    if (celebrateTimer) { clearTimeout(celebrateTimer); celebrateTimer = null; }
+    if (confettiInterval) { clearInterval(confettiInterval); confettiInterval = null; }
     document.getElementById("confettiBox").innerHTML = "";
   }
 
   var celebrateTimer = null;
+  var confettiInterval = null;
 
   var confettiColors = ["#e74c3c", "#3498db", "#f1c40f", "#2ecc71", "#e67e22", "#9b59b6", "#1abc9c", "#ff6b9d"];
 
@@ -290,7 +303,8 @@
   function showCelebration() {
     // Initial big burst then continuous
     burstConfetti();
-    var confettiInterval = setInterval(spawnConfetti, 400);
+    if (confettiInterval) clearInterval(confettiInterval);
+    confettiInterval = setInterval(spawnConfetti, 400);
 
     // Progress bar countdown (5 seconds)
     var prog = document.getElementById("celebrateProgress");
@@ -302,13 +316,11 @@
     }, 50);
 
     celebrateTimer = setTimeout(function () {
-      clearInterval(confettiInterval);
       hideBreak();
     }, 5000);
 
     // Hurray button — dismiss early
     document.getElementById("hurrayBtn").onclick = function () {
-      clearInterval(confettiInterval);
       hideBreak();
     };
   }
@@ -326,20 +338,23 @@
     }
   }
 
+  var _initRetries = 0;
   function init() {
-    if (!window.__TAURI__ || !window.__TAURI__.core) { setTimeout(init, 200); return; }
+    if (!window.__TAURI__ || !window.__TAURI__.core) {
+      if (++_initRetries > 50) { console.error("Tauri API not available after 10s"); return; }
+      setTimeout(init, 200); return;
+    }
     var T = window.__TAURI__;
 
     T.core.invoke("get_tip").then(function (t) { document.getElementById("tipBox").textContent = '"' + t + '"'; });
 
     T.event.listen("break-due", function () {
-      T.core.invoke("get_tip").then(function (t) { showBreak(t); }).catch(function () { showBreak(null); });
-      // Hide snooze button if max snoozes already reached
-      T.core.invoke("get_state").then(function (s) {
-        if (s.snooze_count >= s.max_snoozes) {
-          document.getElementById("snoozeBtn").style.display = "none";
-          document.getElementById("snoozeWrap").style.display = "none";
-        }
+      Promise.all([
+        T.core.invoke("get_tip").catch(function () { return null; }),
+        T.core.invoke("get_state")
+      ]).then(function (results) {
+        var tip = results[0], s = results[1];
+        showBreak(tip, s.snooze_count >= s.max_snoozes);
       });
     });
 
@@ -370,7 +385,7 @@
 
     // Quit button
     document.getElementById("quitBtn").onclick = function () {
-      T.core.invoke("quit_app");
+      T.core.invoke("quit_app").catch(function (e) { console.error("quit_app:", e); });
     };
 
     // Reset stats with inline confirmation
@@ -379,7 +394,7 @@
       this.style.display = "none";
     };
     document.getElementById("resetYes").onclick = function () {
-      T.core.invoke("reset_stats");
+      T.core.invoke("reset_stats").catch(function (e) { console.error("reset_stats:", e); });
       document.getElementById("resetConfirm").style.display = "none";
       document.getElementById("resetStatsBtn").style.display = "";
     };
@@ -390,25 +405,33 @@
 
     // Dashboard buttons
     document.getElementById("takeBreakBtn").onclick = function () {
-      T.core.invoke("take_break_now").then(function () { return T.core.invoke("get_tip"); })
-        .then(function (t) { showBreak(t); }).catch(function () { showBreak(null); });
+      T.core.invoke("take_break_now").then(function () {
+        return Promise.all([
+          T.core.invoke("get_tip").catch(function () { return null; }),
+          T.core.invoke("get_state")
+        ]);
+      }).then(function (results) {
+        var tip = results[0], s = results[1];
+        showBreak(tip, s.snooze_count >= s.max_snoozes);
+      }).catch(function () { showBreak(null, false); });
     };
 
     document.getElementById("pauseBtn").onclick = function () {
-      T.core.invoke(paused ? "resume_monitoring" : "pause_monitoring");
+      T.core.invoke(paused ? "resume_monitoring" : "pause_monitoring").catch(function (e) { console.error("pause/resume:", e); });
     };
 
     // Break controls
     document.getElementById("startBreakBtn").onclick = function () {
+      if (bTimer) { clearInterval(bTimer); bTimer = null; }
       document.getElementById("startBreakBtn").style.display = "none";
       breakRem = breakDur;
       bTimer = setInterval(function () {
         breakRem--; updBreak();
         if (breakRem <= 0) {
           clearInterval(bTimer);
-          T.core.invoke("finish_break");
+          T.core.invoke("finish_break").catch(function (e) { console.error("finish_break:", e); });
           // Play completion sound
-          T.core.invoke("play_complete_sound");
+          T.core.invoke("play_complete_sound").catch(function (e) { console.error("play_complete_sound:", e); });
           // Show celebration
           document.getElementById("breakControls").style.display = "none";
           document.getElementById("snoozeWrap").style.display = "none";
@@ -436,7 +459,7 @@
 
     document.getElementById("skipBtn").onclick = function () {
       if (bTimer) clearInterval(bTimer);
-      T.core.invoke("skip_break");
+      T.core.invoke("skip_break").catch(function (e) { console.error("skip_break:", e); });
       hideBreak();
     };
 
@@ -523,27 +546,27 @@
 
     // Settings: Timer in menu bar toggle
     document.getElementById("timerMenuToggle").onclick = function () {
-      T.core.invoke("toggle_timer_in_menu");
+      T.core.invoke("toggle_timer_in_menu").catch(function (e) { console.error("toggle_timer_in_menu:", e); });
     };
 
     // Settings: Reminder modes
     document.querySelectorAll(".mode-row").forEach(function (r) {
-      r.onclick = function () { T.core.invoke("set_reminder_mode", { mode: r.dataset.mode }); };
+      r.onclick = function () { T.core.invoke("set_reminder_mode", { mode: r.dataset.mode }).catch(function (e) { console.error("set_reminder_mode:", e); }); };
     });
 
     // Settings: Auto-start toggle
     document.getElementById("autoStartToggle").onclick = function () {
       var isOn = this.classList.contains("on");
-      T.core.invoke("set_auto_start", { enabled: !isOn });
+      T.core.invoke("set_auto_start", { enabled: !isOn }).catch(function (e) { console.error("set_auto_start:", e); });
     };
 
     document.getElementById("soundToggle").onclick = function () {
-      T.core.invoke("toggle_sound");
+      T.core.invoke("toggle_sound").catch(function (e) { console.error("toggle_sound:", e); });
     };
 
     // Header sound button
     document.getElementById("soundBtn").onclick = function () {
-      T.core.invoke("toggle_sound");
+      T.core.invoke("toggle_sound").catch(function (e) { console.error("toggle_sound:", e); });
     };
 
     // GitHub link
@@ -598,7 +621,7 @@
     // Keyboard shortcuts
     document.addEventListener("keydown", function (e) {
       // Escape — close settings or stats panel
-      if (e.key === "Escape" || e.key === "Backspace") {
+      if (e.key === "Escape" || (e.key === "Backspace" && e.target.tagName !== "INPUT")) {
         var settings = document.getElementById("settingsPanel");
         var stats = document.getElementById("statsPanel");
         if (settings.classList.contains("show")) {
