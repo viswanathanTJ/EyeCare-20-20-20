@@ -87,18 +87,7 @@ jobs:
           ln -s /Applications "$STAGING_DIR/Applications"
 
           # Add README with quarantine fix instructions (plain text won't be blocked)
-          cat > "$STAGING_DIR/README - If App Won't Open.txt" << 'HEREDOC'
-If macOS says Eye2020 is "damaged" or "can't be verified":
-
-1. Drag Eye2020.app to the Applications folder
-2. Open Terminal and run:
-
-   xattr -cr /Applications/Eye2020.app
-
-3. Open Eye2020 from Launchpad or Spotlight
-
-This removes the quarantine flag that macOS adds to downloaded apps.
-HEREDOC
+          printf 'If macOS says Eye2020 is "damaged" or "can'\''t be verified":\n\n1. Drag Eye2020.app to the Applications folder\n2. Open Terminal and run:\n\n   xattr -cr /Applications/Eye2020.app\n\n3. Open Eye2020 from Launchpad or Spotlight\n\nThis removes the quarantine flag that macOS adds to downloaded apps.\n' > "$STAGING_DIR/README - If App Won't Open.txt"
 
           # Create new DMG with signed app + Applications shortcut
           hdiutil create -volname "$VOLUME_NAME" -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_PATH"
