@@ -25,6 +25,54 @@
 
   function pad(n) { return String(n).padStart(2, "0"); }
 
+  // Click-to-edit: replaces a span with an input, Enter to save, Escape to cancel
+  function isEditing(span) { return span && span.dataset.editing === "1"; }
+
+  function makeEditable(spanId, opts) {
+    var span = document.getElementById(spanId);
+    if (!span) return;
+    span.onclick = function () {
+      if (span.dataset.editing === "1") return; // already editing
+      span.dataset.editing = "1";
+      var cur = opts.getValue();
+      var input = document.createElement("input");
+      input.type = "number";
+      input.className = "cfg-val-input" + (opts.colorClass ? " " + opts.colorClass : "");
+      input.value = cur;
+      input.min = opts.min;
+      input.max = opts.max;
+      input.style.width = "60px";
+      span.textContent = "";
+      span.appendChild(input);
+      input.focus();
+      input.select();
+
+      function close(val) {
+        delete span.dataset.editing;
+        span.textContent = opts.format(val);
+      }
+
+      input.onkeydown = function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          var v = parseInt(input.value, 10);
+          if (isNaN(v) || v < opts.min || v > opts.max) {
+            close(cur); // revert on invalid
+          } else {
+            opts.setValue(v);
+            close(v);
+          }
+        }
+        if (e.key === "Escape") {
+          e.preventDefault();
+          close(cur); // revert
+        }
+      };
+      // On blur (click away), revert — don't save
+      input.onblur = function () { close(cur); };
+    };
+  }
+
   function applyTheme(theme, systemTheme) {
     var isDark;
     if (theme === "system") {
@@ -81,9 +129,11 @@
         document.getElementById("pauseBtn").textContent = "Pause"; paused = false;
       }
 
-      // Update settings panel values
-      document.getElementById("intVal").textContent = curInt + " min";
-      document.getElementById("brkVal").textContent = curBrk + " sec";
+      // Update settings panel values (skip if user is editing)
+      if (!isEditing(document.getElementById("intVal")))
+        document.getElementById("intVal").textContent = curInt + " min";
+      if (!isEditing(document.getElementById("brkVal")))
+        document.getElementById("brkVal").textContent = curBrk + " sec";
 
       // Stats panel
       document.getElementById("spCompleted").textContent = s.today_completed || 0;
@@ -115,15 +165,20 @@
         soundWaves.style.display = "none";
       }
 
-      // Main panel config display
-      document.getElementById("intValMain").textContent = curInt + " min";
-      document.getElementById("brkValMain").textContent = curBrk + " sec";
+      // Main panel config display (skip if editing)
+      if (!isEditing(document.getElementById("intValMain")))
+        document.getElementById("intValMain").textContent = curInt + " min";
+      if (!isEditing(document.getElementById("brkValMain")))
+        document.getElementById("brkValMain").textContent = curBrk + " sec";
 
-      // Snooze settings display
-      document.getElementById("snzDurVal").textContent = curSnzDur + " min";
-      document.getElementById("snzMaxVal").textContent = curSnzMax;
+      // Snooze settings display (skip if editing)
+      if (!isEditing(document.getElementById("snzDurVal")))
+        document.getElementById("snzDurVal").textContent = curSnzDur + " min";
+      if (!isEditing(document.getElementById("snzMaxVal")))
+        document.getElementById("snzMaxVal").textContent = curSnzMax;
 
-      // Snooze button visibility: hide if max reached
+      // Snooze button label + visibility
+      document.getElementById("snoozeBtn").textContent = "Snooze " + curSnzDur + "m";
       if (s.snooze_count >= s.max_snoozes) {
         document.getElementById("snoozeBtn").style.display = "none";
         document.getElementById("snoozeWrap").style.display = "none";
@@ -151,6 +206,7 @@
     document.getElementById("breakControls").style.display = "flex";
     document.getElementById("startBreakBtn").style.display = "";
     document.getElementById("snoozeBtn").style.display = "";
+    document.getElementById("snoozeBtn").textContent = "Snooze " + curSnzDur + "m";
     document.getElementById("snoozeWrap").style.display = "";
     document.getElementById("completeMsg").style.display = "none";
     document.getElementById("breakTitle").textContent = "Time for an Eye Break";
@@ -387,6 +443,44 @@
       curSnzMax = Math.max(1, curSnzMax - 1);
       T.core.invoke("set_max_snoozes", { count: curSnzMax });
     };
+
+    // Click-to-edit: Interval (settings + dashboard)
+    var intEditOpts = {
+      getValue: function () { return curInt; },
+      setValue: function (v) { curInt = v; T.core.invoke("set_interval", { minutes: v }); },
+      min: 5, max: 120,
+      format: function (v) { return v + " min"; },
+      colorClass: ""
+    };
+    makeEditable("intVal", intEditOpts);
+    makeEditable("intValMain", intEditOpts);
+
+    // Click-to-edit: Break duration (settings + dashboard)
+    var brkEditOpts = {
+      getValue: function () { return curBrk; },
+      setValue: function (v) { curBrk = v; T.core.invoke("set_break_duration", { seconds: v }); },
+      min: 5, max: 60,
+      format: function (v) { return v + " sec"; },
+      colorClass: "pink"
+    };
+    makeEditable("brkVal", brkEditOpts);
+    makeEditable("brkValMain", brkEditOpts);
+
+    // Click-to-edit: Snooze duration
+    makeEditable("snzDurVal", {
+      getValue: function () { return curSnzDur; },
+      setValue: function (v) { curSnzDur = v; T.core.invoke("set_snooze_duration", { minutes: v }); },
+      min: 1, max: 59,
+      format: function (v) { return v + " min"; }
+    });
+
+    // Click-to-edit: Max snoozes
+    makeEditable("snzMaxVal", {
+      getValue: function () { return curSnzMax; },
+      setValue: function (v) { curSnzMax = v; T.core.invoke("set_max_snoozes", { count: v }); },
+      min: 1, max: 10,
+      format: function (v) { return String(v); }
+    });
 
     // Dashboard mode chips
     document.querySelectorAll(".chip").forEach(function (c) {
