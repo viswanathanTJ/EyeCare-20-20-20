@@ -1,6 +1,6 @@
 #!/bin/bash
 # Eye2020 Installer
-# Double-click this file to install Eye2020
+# If double-click is blocked, right-click > Open to bypass Gatekeeper
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_NAME="Eye2020.app"

@@ -81,14 +81,26 @@ jobs:
           # Remove old DMG
           rm -f "$DMG_PATH"
 
-          # Create a staging folder with the app, Applications symlink, and Install.command
+          # Create a staging folder with the app, Applications symlink, and install instructions
           STAGING_DIR=$(mktemp -d)
           cp -R "$APP_PATH" "$STAGING_DIR/"
           ln -s /Applications "$STAGING_DIR/Applications"
-          cp scripts/Install.command "$STAGING_DIR/"
-          chmod +x "$STAGING_DIR/Install.command"
 
-          # Create new DMG with signed app + Applications shortcut + quarantine remover
+          # Add README with quarantine fix instructions (plain text won't be blocked)
+          cat > "$STAGING_DIR/README - If App Won't Open.txt" << 'HEREDOC'
+If macOS says Eye2020 is "damaged" or "can't be verified":
+
+1. Drag Eye2020.app to the Applications folder
+2. Open Terminal and run:
+
+   xattr -cr /Applications/Eye2020.app
+
+3. Open Eye2020 from Launchpad or Spotlight
+
+This removes the quarantine flag that macOS adds to downloaded apps.
+HEREDOC
+
+          # Create new DMG with signed app + Applications shortcut
           hdiutil create -volname "$VOLUME_NAME" -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_PATH"
           rm -rf "$STAGING_DIR"
           echo "Re-created DMG: $DMG_PATH"
