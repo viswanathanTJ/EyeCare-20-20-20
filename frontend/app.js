@@ -2,6 +2,7 @@
   var C = 2 * Math.PI * 100;
   var breakDur = 20, breakRem = 20, bTimer = null, paused = false, total = 1200;
   var curInt = 20, curBrk = 20, curSnzDur = 5, curSnzMax = 3;
+  var settingsDirty = 0; // timestamp of last user setting change
   var themeChoice = "system";
   var defaultAccent = "#64ffda", defaultPink = "#ffd700";
   var customAccent = localStorage.getItem("accent") || "";
@@ -73,6 +74,33 @@
     };
   }
 
+  function markDirty() { settingsDirty = Date.now(); }
+  function isSettingsDirty() { return Date.now() - settingsDirty < 1500; }
+
+  // Debounce: delays fn until wait ms after last call
+  var _debounceTimers = {};
+  function debounce(key, fn, wait) {
+    if (_debounceTimers[key]) clearTimeout(_debounceTimers[key]);
+    _debounceTimers[key] = setTimeout(fn, wait);
+  }
+
+  // Immediately update all settings displays from local vars
+  function refreshSettingsUI() {
+    var el;
+    el = document.getElementById("intVal");
+    if (el && !isEditing(el)) el.textContent = curInt + " min";
+    el = document.getElementById("intValMain");
+    if (el && !isEditing(el)) el.textContent = curInt + " min";
+    el = document.getElementById("brkVal");
+    if (el && !isEditing(el)) el.textContent = curBrk + " sec";
+    el = document.getElementById("brkValMain");
+    if (el && !isEditing(el)) el.textContent = curBrk + " sec";
+    el = document.getElementById("snzDurVal");
+    if (el && !isEditing(el)) el.textContent = curSnzDur + " min";
+    el = document.getElementById("snzMaxVal");
+    if (el && !isEditing(el)) el.textContent = String(curSnzMax);
+  }
+
   function applyTheme(theme, systemTheme) {
     var isDark;
     if (theme === "system") {
@@ -95,10 +123,6 @@
     window.__TAURI__.core.invoke("get_state").then(function (s) {
       total = s.break_interval_secs;
       breakDur = s.break_duration_secs;
-      curInt = Math.round(s.break_interval_secs / 60);
-      curBrk = s.break_duration_secs;
-      curSnzDur = Math.round(s.snooze_duration_secs / 60);
-      curSnzMax = s.max_snoozes;
 
       document.getElementById("timerTime").textContent = pad(Math.floor(s.seconds_remaining / 60)) + ":" + pad(s.seconds_remaining % 60);
       document.getElementById("progress").style.strokeDashoffset = C * (1 - s.seconds_remaining / total);
@@ -129,7 +153,13 @@
         document.getElementById("pauseBtn").textContent = "Pause"; paused = false;
       }
 
-      // Update settings panel values (skip if user is editing)
+      // Update settings panel values (skip if user is editing or just changed)
+      if (!isSettingsDirty()) {
+        curInt = Math.round(s.break_interval_secs / 60);
+        curBrk = s.break_duration_secs;
+        curSnzDur = Math.round(s.snooze_duration_secs / 60);
+        curSnzMax = s.max_snoozes;
+      }
       if (!isEditing(document.getElementById("intVal")))
         document.getElementById("intVal").textContent = curInt + " min";
       if (!isEditing(document.getElementById("brkVal")))
@@ -415,10 +445,10 @@
     function snapUp(val, step, max) { return Math.min(max, Math.floor(val / step) * step + step); }
     function snapDown(val, step, min) { return Math.max(min, Math.ceil(val / step) * step - step); }
 
-    function intUp() { curInt = snapUp(curInt, 5, 120); T.core.invoke("set_interval", { minutes: curInt }); }
-    function intDown() { curInt = snapDown(curInt, 5, 5); T.core.invoke("set_interval", { minutes: curInt }); }
-    function brkUp() { curBrk = snapUp(curBrk, 5, 60); T.core.invoke("set_break_duration", { seconds: curBrk }); }
-    function brkDown() { curBrk = snapDown(curBrk, 5, 5); T.core.invoke("set_break_duration", { seconds: curBrk }); }
+    function intUp() { curInt = snapUp(curInt, 5, 120); markDirty(); refreshSettingsUI(); debounce("int", function () { T.core.invoke("set_interval", { minutes: curInt }); }, 300); }
+    function intDown() { curInt = snapDown(curInt, 5, 5); markDirty(); refreshSettingsUI(); debounce("int", function () { T.core.invoke("set_interval", { minutes: curInt }); }, 300); }
+    function brkUp() { curBrk = snapUp(curBrk, 5, 60); markDirty(); refreshSettingsUI(); debounce("brk", function () { T.core.invoke("set_break_duration", { seconds: curBrk }); }, 300); }
+    function brkDown() { curBrk = snapDown(curBrk, 5, 5); markDirty(); refreshSettingsUI(); debounce("brk", function () { T.core.invoke("set_break_duration", { seconds: curBrk }); }, 300); }
 
     document.getElementById("intUp").onclick = intUp;
     document.getElementById("intDown").onclick = intDown;
@@ -431,27 +461,27 @@
 
     // Snooze duration +/-
     document.getElementById("snzDurUp").onclick = function () {
-      curSnzDur = Math.min(curInt - 1, curSnzDur + 1);
-      T.core.invoke("set_snooze_duration", { minutes: curSnzDur });
+      curSnzDur = Math.min(curInt - 1, curSnzDur + 1); markDirty(); refreshSettingsUI();
+      debounce("snzDur", function () { T.core.invoke("set_snooze_duration", { minutes: curSnzDur }); }, 300);
     };
     document.getElementById("snzDurDown").onclick = function () {
-      curSnzDur = Math.max(1, curSnzDur - 1);
-      T.core.invoke("set_snooze_duration", { minutes: curSnzDur });
+      curSnzDur = Math.max(1, curSnzDur - 1); markDirty(); refreshSettingsUI();
+      debounce("snzDur", function () { T.core.invoke("set_snooze_duration", { minutes: curSnzDur }); }, 300);
     };
     // Max snoozes +/-
     document.getElementById("snzMaxUp").onclick = function () {
-      curSnzMax = Math.min(10, curSnzMax + 1);
-      T.core.invoke("set_max_snoozes", { count: curSnzMax });
+      curSnzMax = Math.min(10, curSnzMax + 1); markDirty(); refreshSettingsUI();
+      debounce("snzMax", function () { T.core.invoke("set_max_snoozes", { count: curSnzMax }); }, 300);
     };
     document.getElementById("snzMaxDown").onclick = function () {
-      curSnzMax = Math.max(1, curSnzMax - 1);
-      T.core.invoke("set_max_snoozes", { count: curSnzMax });
+      curSnzMax = Math.max(1, curSnzMax - 1); markDirty(); refreshSettingsUI();
+      debounce("snzMax", function () { T.core.invoke("set_max_snoozes", { count: curSnzMax }); }, 300);
     };
 
     // Click-to-edit: Interval (settings + dashboard)
     var intEditOpts = {
       getValue: function () { return curInt; },
-      setValue: function (v) { curInt = v; T.core.invoke("set_interval", { minutes: v }); },
+      setValue: function (v) { curInt = v; markDirty(); T.core.invoke("set_interval", { minutes: v }); },
       min: 5, max: 120,
       format: function (v) { return v + " min"; },
       colorClass: ""
@@ -462,7 +492,7 @@
     // Click-to-edit: Break duration (settings + dashboard)
     var brkEditOpts = {
       getValue: function () { return curBrk; },
-      setValue: function (v) { curBrk = v; T.core.invoke("set_break_duration", { seconds: v }); },
+      setValue: function (v) { curBrk = v; markDirty(); T.core.invoke("set_break_duration", { seconds: v }); },
       min: 5, max: 60,
       format: function (v) { return v + " sec"; },
       colorClass: "pink"
@@ -473,7 +503,7 @@
     // Click-to-edit: Snooze duration
     makeEditable("snzDurVal", {
       getValue: function () { return curSnzDur; },
-      setValue: function (v) { curSnzDur = v; T.core.invoke("set_snooze_duration", { minutes: v }); },
+      setValue: function (v) { curSnzDur = v; markDirty(); T.core.invoke("set_snooze_duration", { minutes: v }); },
       min: 1, max: 59,
       format: function (v) { return v + " min"; }
     });
@@ -481,7 +511,7 @@
     // Click-to-edit: Max snoozes
     makeEditable("snzMaxVal", {
       getValue: function () { return curSnzMax; },
-      setValue: function (v) { curSnzMax = v; T.core.invoke("set_max_snoozes", { count: v }); },
+      setValue: function (v) { curSnzMax = v; markDirty(); T.core.invoke("set_max_snoozes", { count: v }); },
       min: 1, max: 10,
       format: function (v) { return String(v); }
     });
