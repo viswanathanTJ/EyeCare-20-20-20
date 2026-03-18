@@ -65,11 +65,7 @@ jobs:
         env:
           CARGO_INCREMENTAL: 0
 
-<<<<<<< ahamed-2020
-      - name: Ad-hoc sign and re-package macOS DMG
-=======
       - name: Ad-hoc sign macOS app and repack DMG
->>>>>>> master
         if: startsWith(matrix.platform, 'macos')
         run: |
           # Sign the .app bundle
@@ -78,26 +74,6 @@ jobs:
           codesign --force --deep --sign - "$APP_PATH"
           codesign --verify --verbose "$APP_PATH"
 
-<<<<<<< ahamed-2020
-          # Re-create the DMG with the signed app
-          DMG_PATH=$(find src-tauri/target/${{ matrix.target }}/release/bundle/dmg -name "*.dmg" -maxdepth 1)
-          DMG_NAME=$(basename "$DMG_PATH")
-          DMG_DIR=$(dirname "$DMG_PATH")
-          VOLUME_NAME="Eye2020"
-
-          # Remove old DMG
-          rm -f "$DMG_PATH"
-
-          # Create a staging folder with the app and Applications symlink
-          STAGING_DIR=$(mktemp -d)
-          cp -R "$APP_PATH" "$STAGING_DIR/"
-          ln -s /Applications "$STAGING_DIR/Applications"
-
-          # Create new DMG with signed app + Applications shortcut
-          hdiutil create -volname "$VOLUME_NAME" -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_PATH"
-          rm -rf "$STAGING_DIR"
-          echo "Re-created DMG: $DMG_PATH"
-=======
           # Mount the Tauri-generated DMG (read-only), copy contents, add Install.command, repack
           DMG_PATH=$(find src-tauri/target/${{ matrix.target }}/release/bundle/dmg -name "*.dmg" -maxdepth 1)
           VOLUME_NAME="Eye2020"
@@ -127,7 +103,6 @@ jobs:
           hdiutil create -volname "$VOLUME_NAME" -srcfolder "$STAGING_DIR" -ov -format UDZO "$DMG_PATH"
           rm -rf "$STAGING_DIR"
           echo "Repacked DMG: $DMG_PATH"
->>>>>>> master
 
       - name: Upload macOS artifacts
         if: startsWith(matrix.platform, 'macos')
